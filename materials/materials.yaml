@@ -1,40 +1,140 @@
+# Neuber Correction Calculator - Materials Database
+# This file contains material properties for stress correction calculations
+# All values are in SI units (MPa for stresses, MPa for Young's modulus)
+
 materials:
-  - id: AL7050_T74
-    name: "Aluminium, 7050, T74 AMS4107"
-    properties:
-      fty: 365 # Yield strength in MPa
-      ftu: 455 # Ultimate tensile strength in MPa
-      E: 70326 # Young's modulus in MPa
-      epsilon_u: 0.07 # Fracture strain
+  # ========================================
+  # ALUMINUM ALLOYS
+  # ========================================
 
-  - id: AL7050_T73_bar_200
-    name: "Aluminium, 7050, T73 bar >200"
+  - id: AL2024_T3
+    name: "Aluminum 2024-T3"
+    category: "aluminum"
+    description: "High-strength aluminum alloy, commonly used in aerospace applications"
     properties:
-      fty: 331
-      ftu: 413
-      E: 71000 # placeholder, didnt find a value
-      epsilon_u: 0.07 # placeholder, didnt find a value
+      fty: 345 # Yield strength (MPa)
+      ftu: 485 # Ultimate tensile strength (MPa)
+      E: 72400 # Young's modulus (MPa)
+      epsilon_u: 0.18 # Fracture strain
 
-  - id: AL_7075_T7351
-    name: "Aluminium 7175/7075 T7351"
-    properties:
-      fty: 434
-      ftu: 503
-      E: 71000 # not sure
-      epsilon_u: 0.08 # not sure
-
-  - id: S355_steel
-    name: "S355 structural steel"
-    properties:
-      fty: 315
-      ftu: 470
-      E: 210000
-      epsilon_u: 0.12
-
-  - id: aluminum_6061
+  - id: AL6061_T6
     name: "Aluminum 6061-T6"
+    category: "aluminum"
+    description: "General-purpose aluminum alloy, excellent corrosion resistance"
     properties:
-      fty: 240
-      ftu: 310
-      E: 68900
-      epsilon_u: 0.12
+      fty: 240 # Yield strength (MPa)
+      ftu: 310 # Ultimate tensile strength (MPa)
+      E: 68900 # Young's modulus (MPa)
+      epsilon_u: 0.12 # Fracture strain
+
+  - id: AL7075_T6
+    name: "Aluminum 7075-T6"
+    category: "aluminum"
+    description: "High-strength aluminum alloy, used in aircraft structures"
+    properties:
+      fty: 503 # Yield strength (MPa)
+      ftu: 572 # Ultimate tensile strength (MPa)
+      E: 71700 # Young's modulus (MPa)
+      epsilon_u: 0.11 # Fracture strain
+
+  - id: AL7050_T7451
+    name: "Aluminum 7050-T7451"
+    category: "aluminum"
+    description: "High-strength aluminum alloy, excellent stress corrosion resistance"
+    properties:
+      fty: 455 # Yield strength (MPa)
+      ftu: 510 # Ultimate tensile strength (MPa)
+      E: 71000 # Young's modulus (MPa)
+      epsilon_u: 0.10 # Fracture strain
+
+  # ========================================
+  # STEEL ALLOYS
+  # ========================================
+
+  - id: STEEL_S355
+    name: "S355 Structural Steel"
+    category: "steel"
+    description: "European structural steel, commonly used in construction"
+    properties:
+      fty: 355 # Yield strength (MPa)
+      ftu: 470 # Ultimate tensile strength (MPa)
+      E: 210000 # Young's modulus (MPa)
+      epsilon_u: 0.20 # Fracture strain
+
+  - id: STEEL_A36
+    name: "A36 Carbon Steel"
+    category: "steel"
+    description: "American structural steel, widely used in construction"
+    properties:
+      fty: 250 # Yield strength (MPa)
+      ftu: 400 # Ultimate tensile strength (MPa)
+      E: 200000 # Young's modulus (MPa)
+      epsilon_u: 0.21 # Fracture strain
+
+  - id: STEEL_4340
+    name: "4340 Alloy Steel"
+    category: "steel"
+    description: "High-strength alloy steel, used in aircraft landing gear"
+    properties:
+      fty: 1517 # Yield strength (MPa)
+      ftu: 1793 # Ultimate tensile strength (MPa)
+      E: 205000 # Young's modulus (MPa)
+      epsilon_u: 0.15 # Fracture strain
+
+  - id: STEEL_300M
+    name: "300M Alloy Steel"
+    category: "steel"
+    description: "Ultra-high-strength steel, used in aircraft components"
+    properties:
+      fty: 1724 # Yield strength (MPa)
+      ftu: 1931 # Ultimate tensile strength (MPa)
+      E: 205000 # Young's modulus (MPa)
+      epsilon_u: 0.12 # Fracture strain
+
+  # ========================================
+  # TITANIUM ALLOYS
+  # ========================================
+
+  - id: TI_6AL4V
+    name: "Ti-6Al-4V Titanium"
+    category: "titanium"
+    description: "Most common titanium alloy, excellent strength-to-weight ratio"
+    properties:
+      fty: 825 # Yield strength (MPa)
+      ftu: 895 # Ultimate tensile strength (MPa)
+      E: 113800 # Young's modulus (MPa)
+      epsilon_u: 0.14 # Fracture strain
+
+  - id: TI_6AL2SN4ZR2MO
+    name: "Ti-6Al-2Sn-4Zr-2Mo"
+    category: "titanium"
+    description: "High-temperature titanium alloy, used in jet engines"
+    properties:
+      fty: 860 # Yield strength (MPa)
+      ftu: 930 # Ultimate tensile strength (MPa)
+      E: 114000 # Young's modulus (MPa)
+      epsilon_u: 0.13 # Fracture strain
+
+  # ========================================
+  # COMPOSITE MATERIALS (Representative)
+  # ========================================
+
+  - id: CFRP_T300_5208
+    name: "CFRP T300/5208"
+    category: "composite"
+    description: "Carbon fiber reinforced polymer, unidirectional"
+    properties:
+      fty: 1500 # Yield strength (MPa) - approximate
+      ftu: 1500 # Ultimate tensile strength (MPa)
+      E: 138000 # Young's modulus (MPa)
+      epsilon_u: 0.011 # Fracture strain
+
+  - id: GFRP_E_GLASS
+    name: "GFRP E-Glass"
+    category: "composite"
+    description: "Glass fiber reinforced polymer, unidirectional"
+    properties:
+      fty: 1140 # Yield strength (MPa) - approximate
+      ftu: 1140 # Ultimate tensile strength (MPa)
+      E: 45000 # Young's modulus (MPa)
+      epsilon_u: 0.025 # Fracture strain
