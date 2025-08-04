@@ -1,0 +1,804 @@
+<!-- templates/index.html -->
+{% extends "base.html" %}
+
+{% block title %}Neuber Correction Calculator{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Neuber Correction Calculator</h5>
+            </div>
+            <div class="card-body">
+                <!-- Material Selection Tabs -->
+                <ul class="nav nav-tabs mb-3" id="materialTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="preset-tab" data-bs-toggle="tab" data-bs-target="#preset"
+                            type="button" role="tab">
+                            Preset Materials
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual"
+                            type="button" role="tab">
+                            Manual Input
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload"
+                            type="button" role="tab">
+                            Upload YAML
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="materialTabContent">
+                    <!-- Preset Materials Tab -->
+                    <div class="tab-pane fade show active" id="preset" role="tabpanel">
+                        <form id="correctionForm">
+                            <div class="mb-3">
+                                <label for="material" class="form-label">Select Material</label>
+                                <select class="form-select" id="material" required>
+                                    <option value="">Choose a material...</option>
+                                    {% for name, props in materials.items() %}
+                                    <option value="{{ name }}" data-props='{{ props | tojson }}'>
+                                        {{ name.replace('_', ' ').title() }} - {{ props.description }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div id="materialInfo" class="mb-3" style="display: none;">
+                                <label class="form-label">Material Properties</label>
+                                <div id="materialDetails"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="stressValues" class="form-label">Stress Values (MPa)</label>
+                                <textarea class="form-control" id="stressValues" rows="3"
+                                    placeholder="Enter stress values separated by commas (e.g., 400, 500, 600)"
+                                    required></textarea>
+                                <div class="form-text">Enter multiple stress values separated by commas</div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Calculate Corrections</button>
+                        </form>
+                    </div>
+
+                    <!-- Manual Input Tab -->
+                    <div class="tab-pane fade" id="manual" role="tabpanel">
+                        <form id="manualMaterialForm">
+                            <div class="mb-3">
+                                <label for="manualMaterialName" class="form-label">Material Name</label>
+                                <input type="text" class="form-control" id="manualMaterialName" required
+                                    placeholder="e.g., Custom_Steel_001">
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="yieldStrength" class="form-label">Yield Strength (MPa)</label>
+                                        <input type="number" class="form-control" id="yieldStrength" required
+                                            step="0.1">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="sigmaU" class="form-label">Ultimate Strength (MPa)</label>
+                                        <input type="number" class="form-control" id="sigmaU" required step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="elasticMod" class="form-label">Elastic Modulus (MPa)</label>
+                                        <input type="number" class="form-control" id="elasticMod" required step="1000">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="epsU" class="form-label">Ultimate Strain</label>
+                                        <input type="number" class="form-control" id="epsU" required step="0.001">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="manualDescription" class="form-label">Description (Optional)</label>
+                                <input type="text" class="form-control" id="manualDescription"
+                                    placeholder="Brief description of the material">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="manualStressValues" class="form-label">Stress Values (MPa)</label>
+                                <textarea class="form-control" id="manualStressValues" rows="3"
+                                    placeholder="Enter stress values separated by commas (e.g., 400, 500, 600)"
+                                    required></textarea>
+                                <div class="form-text">Enter multiple stress values separated by commas</div>
+                            </div>
+
+                            <div class="d-flex gap-2 mb-3">
+                                <button type="submit" class="btn btn-primary">Add Material & Calculate</button>
+                                <button type="button" id="addMaterialBtn" class="btn btn-outline-secondary">Add Material
+                                    Only</button>
+                                <button type="button" id="downloadYamlBtn" class="btn btn-outline-success"
+                                    disabled>Download YAML</button>
+                                <button type="button" id="clearMaterialsBtn" class="btn btn-outline-danger"
+                                    disabled>Clear All</button>
+                            </div>
+                        </form>
+
+                        <!-- Materials List -->
+                        <div id="materialsList" class="mt-3" style="display: none;">
+                            <h6>Added Materials:</h6>
+                            <div id="materialsTable" class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Description</th>
+                                            <th>Yield (MPa)</th>
+                                            <th>Ultimate (MPa)</th>
+                                            <th>E (MPa)</th>
+                                            <th>εu</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="materialsTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload YAML Tab -->
+                    <div class="tab-pane fade" id="upload" role="tabpanel">
+                        <form id="uploadForm">
+                            <div class="mb-3">
+                                <label for="yamlFile" class="form-label">Upload Materials YAML File</label>
+                                <input type="file" class="form-control" id="yamlFile" accept=".yaml,.yml">
+                                <div class="form-text">Select a YAML file with material definitions to upload
+                                    automatically</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="uploadStressValues" class="form-label">Stress Values (MPa)</label>
+                                <textarea class="form-control" id="uploadStressValues" rows="3"
+                                    placeholder="Enter stress values separated by commas (e.g., 400, 500, 600)"
+                                    required></textarea>
+                                <div class="form-text">Enter multiple stress values separated by commas</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="uploadMaterialSelect" class="form-label">Select Material</label>
+                                <select class="form-select" id="uploadMaterialSelect" disabled>
+                                    <option value="">Upload a YAML file first...</option>
+                                </select>
+                            </div>
+
+                            <div class="d-flex gap-2 mb-3">
+                                <button type="button" id="calculateBtn" class="btn btn-primary"
+                                    disabled>Calculate</button>
+                            </div>
+                        </form>
+
+                        <div class="mt-3">
+                            <h6>YAML File Format Example:</h6>
+                            <pre class="bg-light p-2 rounded"><code>materials:
+  - id: custom_steel
+    name: "Custom Steel Alloy"
+    properties:
+      fty: 350 # Yield strength in MPa
+      ftu: 500 # Ultimate tensile strength in MPa
+      E: 210000 # Young's modulus in MPa
+      epsilon_u: 0.15 # Fracture strain
+
+  - id: custom_aluminum
+    name: "Custom Aluminum Alloy"
+    properties:
+      fty: 200
+      ftu: 280
+      E: 70000
+      epsilon_u: 0.12</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div id="results" class="card" style="display: none;">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Results</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <button id="downloadCSV" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-download"></i> Download CSV
+                    </button>
+                    <button id="downloadPlot" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-download"></i> Download Plot
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Original Stress (MPa)</th>
+                                <th>Corrected Stress (MPa)</th>
+                                <th>Reduction (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTable">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="plotContainer" class="mt-3" style="display: none;">
+                    <h6>Neuber Diagram</h6>
+                    <img id="plotImage" class="img-fluid" alt="Neuber Diagram">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const materialSelect = document.getElementById('material');
+        const materialInfo = document.getElementById('materialInfo');
+        const materialDetails = document.getElementById('materialDetails');
+        const correctionForm = document.getElementById('correctionForm');
+        const manualMaterialForm = document.getElementById('manualMaterialForm');
+        const uploadForm = document.getElementById('uploadForm');
+        const resultsDiv = document.getElementById('results');
+        const resultsTable = document.getElementById('resultsTable');
+        const plotContainer = document.getElementById('plotContainer');
+        const plotImage = document.getElementById('plotImage');
+        const downloadPlotBtn = document.getElementById('downloadPlot');
+        const downloadCSVBtn = document.getElementById('downloadCSV');
+        const uploadMaterialSelect = document.getElementById('uploadMaterialSelect');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const addMaterialBtn = document.getElementById('addMaterialBtn');
+        const downloadYamlBtn = document.getElementById('downloadYamlBtn');
+        const clearMaterialsBtn = document.getElementById('clearMaterialsBtn');
+        const materialsList = document.getElementById('materialsList');
+        const materialsTableBody = document.getElementById('materialsTableBody');
+
+        // Store manually added materials
+        let manualMaterials = [];
+
+        // Show material info when selected (preset materials)
+        materialSelect.addEventListener('change', function () {
+            const selected = materialSelect.options[materialSelect.selectedIndex];
+            if (selected.value) {
+                const props = JSON.parse(selected.getAttribute('data-props'));
+                let html = '<ul class="list-group">';
+                for (const [k, v] of Object.entries(props)) {
+                    if (k !== 'description' && k !== 'category') {
+                        html += `<li class="list-group-item"><strong>${k.replace('_', ' ').toUpperCase()}:</strong> ${v}</li>`;
+                    }
+                }
+                html += '</ul>';
+                materialDetails.innerHTML = html;
+                materialInfo.style.display = '';
+            } else {
+                materialInfo.style.display = 'none';
+            }
+        });
+
+        // Handle preset materials form submission
+        correctionForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            await calculateCorrections();
+        });
+
+        // Handle manual material form submission
+        manualMaterialForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            await addManualMaterialAndCalculate();
+        });
+
+        // Handle add material only button
+        addMaterialBtn.addEventListener('click', async function (e) {
+            e.preventDefault();
+            await addManualMaterialOnly();
+        });
+
+        // Handle download YAML button
+        downloadYamlBtn.addEventListener('click', function () {
+            downloadMaterialsYaml();
+        });
+
+        // Handle clear materials button
+        clearMaterialsBtn.addEventListener('click', function () {
+            clearAllMaterials();
+        });
+
+        // Handle file input change (auto-upload)
+        document.getElementById('yamlFile').addEventListener('change', async function (e) {
+            if (e.target.files[0]) {
+                await uploadMaterials();
+            }
+        });
+
+
+
+        // Handle calculate button click
+        calculateBtn.addEventListener('click', async function (e) {
+            e.preventDefault();
+            await calculateWithUploadedMaterial();
+        });
+
+        async function calculateCorrections(customMaterial = null, materialName = null) {
+            resultsDiv.style.display = 'none';
+            plotContainer.style.display = 'none';
+            resultsTable.innerHTML = '';
+            plotImage.src = '';
+
+            const stressValues = document.getElementById('stressValues').value
+                .split(',')
+                .map(s => parseFloat(s.trim()))
+                .filter(s => !isNaN(s));
+
+            if (!materialName && !materialSelect.value) {
+                alert('Please select a material and enter at least one valid stress value.');
+                return;
+            }
+
+            if (stressValues.length === 0) {
+                alert('Please enter at least one valid stress value.');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = document.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Calculating...';
+            submitBtn.disabled = true;
+
+            try {
+                // Call API
+                const response = await fetch('/api/correct', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        material_name: materialName || materialSelect.value,
+                        stress_values: stressValues,
+                        custom_material: customMaterial
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error('API Error: ' + errorText);
+                }
+
+                const data = await response.json();
+
+                // Show results
+                resultsDiv.style.display = '';
+                resultsTable.innerHTML = '';
+
+                for (let i = 0; i < data.original_stresses.length; i++) {
+                    const orig = data.original_stresses[i];
+                    const corr = data.corrected_stresses[i];
+                    const reduction = ((orig - corr) / orig * 100).toFixed(2);
+                    resultsTable.innerHTML += `<tr>
+                    <td>${orig}</td>
+                    <td>${corr.toFixed(2)}</td>
+                    <td>${reduction}%</td>
+                </tr>`;
+                }
+
+                // Generate plot for the first stress value
+                if (data.original_stresses.length > 0) {
+                    try {
+                        const plotParams = {
+                            material_name: materialName || materialSelect.value,
+                            stress_value: data.original_stresses[0].toString()
+                        };
+
+                        if (customMaterial) {
+                            plotParams.custom_material = JSON.stringify(customMaterial);
+                        }
+
+                        const plotResp = await fetch('/api/plot', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams(plotParams)
+                        });
+
+                        if (plotResp.ok) {
+                            const plotData = await plotResp.json();
+                            plotImage.src = plotData.plot_data;
+                            plotContainer.style.display = '';
+                        }
+                    } catch (plotError) {
+                        console.warn('Could not generate plot:', plotError);
+                    }
+                }
+
+                // Setup download handlers
+                downloadPlotBtn.onclick = function () {
+                    if (plotImage.src) {
+                        const link = document.createElement('a');
+                        link.href = plotImage.src;
+                        link.download = `neuber_diagram_${materialName || materialSelect.value}_${data.original_stresses[0]}.png`;
+                        link.click();
+                    }
+                };
+
+                downloadCSVBtn.onclick = function () {
+                    let csv = 'Original Stress (MPa),Corrected Stress (MPa),Reduction (%)\n';
+                    for (let i = 0; i < data.original_stresses.length; i++) {
+                        const orig = data.original_stresses[i];
+                        const corr = data.corrected_stresses[i];
+                        const reduction = ((orig - corr) / orig * 100).toFixed(2);
+                        csv += `${orig},${corr.toFixed(2)},${reduction}\n`;
+                    }
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `neuber_correction_${materialName || materialSelect.value}.csv`;
+                    link.click();
+                };
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                // Restore button state
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function addManualMaterialAndCalculate() {
+            const materialName = document.getElementById('manualMaterialName').value;
+            const yieldStrength = parseFloat(document.getElementById('yieldStrength').value);
+            const sigmaU = parseFloat(document.getElementById('sigmaU').value);
+            const elasticMod = parseFloat(document.getElementById('elasticMod').value);
+            const epsU = parseFloat(document.getElementById('epsU').value);
+            const description = document.getElementById('manualDescription').value;
+            const stressValues = document.getElementById('manualStressValues').value
+                .split(',')
+                .map(s => parseFloat(s.trim()))
+                .filter(s => !isNaN(s));
+
+            if (!materialName || isNaN(yieldStrength) || isNaN(sigmaU) || isNaN(elasticMod) || isNaN(epsU)) {
+                alert('Please fill in all required material properties.');
+                return;
+            }
+
+            if (stressValues.length === 0) {
+                alert('Please enter at least one valid stress value.');
+                return;
+            }
+
+            try {
+                // Add the material first
+                const addResponse = await fetch('/api/manual-material', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: materialName,
+                        yield_strength: yieldStrength,
+                        sigma_u: sigmaU,
+                        elastic_mod: elasticMod,
+                        eps_u: epsU,
+                        description: description
+                    })
+                });
+
+                if (!addResponse.ok) {
+                    const errorText = await addResponse.text();
+                    throw new Error('Error adding material: ' + errorText);
+                }
+
+                // Add to local materials list
+                addMaterialToLocalList(materialName, yieldStrength, sigmaU, elasticMod, epsU, description);
+
+                // Now calculate with the custom material
+                const customMaterial = {
+                    yield_strength: yieldStrength,
+                    sigma_u: sigmaU,
+                    elastic_mod: elasticMod,
+                    eps_u: epsU
+                };
+
+                await calculateCorrections(customMaterial, materialName);
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function addManualMaterialOnly() {
+            const materialName = document.getElementById('manualMaterialName').value;
+            const yieldStrength = parseFloat(document.getElementById('yieldStrength').value);
+            const sigmaU = parseFloat(document.getElementById('sigmaU').value);
+            const elasticMod = parseFloat(document.getElementById('elasticMod').value);
+            const epsU = parseFloat(document.getElementById('epsU').value);
+            const description = document.getElementById('manualDescription').value;
+
+            if (!materialName || isNaN(yieldStrength) || isNaN(sigmaU) || isNaN(elasticMod) || isNaN(epsU)) {
+                alert('Please fill in all required material properties.');
+                return;
+            }
+
+            try {
+                // Add the material to backend
+                const addResponse = await fetch('/api/manual-material', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: materialName,
+                        yield_strength: yieldStrength,
+                        sigma_u: sigmaU,
+                        elastic_mod: elasticMod,
+                        eps_u: epsU,
+                        description: description
+                    })
+                });
+
+                if (!addResponse.ok) {
+                    const errorText = await addResponse.text();
+                    throw new Error('Error adding material: ' + errorText);
+                }
+
+                // Add to local materials list
+                addMaterialToLocalList(materialName, yieldStrength, sigmaU, elasticMod, epsU, description);
+
+                // Clear form
+                clearManualForm();
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function addMaterialToLocalList(name, yieldStrength, sigmaU, elasticMod, epsU, description) {
+            // Check if material already exists
+            const existingIndex = manualMaterials.findIndex(m => m.name === name);
+            if (existingIndex !== -1) {
+                manualMaterials[existingIndex] = {
+                    name: name,
+                    description: description || `Manual material: ${name}`,
+                    properties: {
+                        fty: yieldStrength,
+                        ftu: sigmaU,
+                        E: elasticMod,
+                        epsilon_u: epsU
+                    }
+                };
+            } else {
+                manualMaterials.push({
+                    name: name,
+                    description: description || `Manual material: ${name}`,
+                    properties: {
+                        fty: yieldStrength,
+                        ftu: sigmaU,
+                        E: elasticMod,
+                        epsilon_u: epsU
+                    }
+                });
+            }
+
+            updateMaterialsTable();
+            updateButtons();
+        }
+
+        function updateMaterialsTable() {
+            if (manualMaterials.length === 0) {
+                materialsList.style.display = 'none';
+                return;
+            }
+
+            materialsList.style.display = 'block';
+            materialsTableBody.innerHTML = '';
+
+            manualMaterials.forEach((material, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${material.name}</td>
+                    <td>${material.description}</td>
+                    <td>${material.properties.fty}</td>
+                    <td>${material.properties.ftu}</td>
+                    <td>${material.properties.E}</td>
+                    <td>${material.properties.epsilon_u}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="calculateWithMaterial(${index})">Calculate</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeMaterial(${index})">Remove</button>
+                    </td>
+                `;
+                materialsTableBody.appendChild(row);
+            });
+        }
+
+        function updateButtons() {
+            downloadYamlBtn.disabled = manualMaterials.length === 0;
+            clearMaterialsBtn.disabled = manualMaterials.length === 0;
+        }
+
+        function clearManualForm() {
+            document.getElementById('manualMaterialName').value = '';
+            document.getElementById('yieldStrength').value = '';
+            document.getElementById('sigmaU').value = '';
+            document.getElementById('elasticMod').value = '';
+            document.getElementById('epsU').value = '';
+            document.getElementById('manualDescription').value = '';
+            document.getElementById('manualStressValues').value = '';
+        }
+
+        function clearAllMaterials() {
+            if (confirm('Are you sure you want to clear all manually added materials?')) {
+                manualMaterials = [];
+                updateMaterialsTable();
+                updateButtons();
+            }
+        }
+
+        function removeMaterial(index) {
+            if (confirm(`Are you sure you want to remove material "${manualMaterials[index].name}"?`)) {
+                manualMaterials.splice(index, 1);
+                updateMaterialsTable();
+                updateButtons();
+            }
+        }
+
+        async function calculateWithMaterial(index) {
+            const material = manualMaterials[index];
+            const stressValues = document.getElementById('manualStressValues').value
+                .split(',')
+                .map(s => parseFloat(s.trim()))
+                .filter(s => !isNaN(s));
+
+            if (stressValues.length === 0) {
+                alert('Please enter stress values to calculate.');
+                return;
+            }
+
+            const customMaterial = {
+                yield_strength: material.properties.fty,
+                sigma_u: material.properties.ftu,
+                elastic_mod: material.properties.E,
+                eps_u: material.properties.epsilon_u
+            };
+
+            await calculateCorrections(customMaterial, material.name);
+        }
+
+        function downloadMaterialsYaml() {
+            if (manualMaterials.length === 0) {
+                alert('No materials to download.');
+                return;
+            }
+
+            const yamlData = {
+                materials: manualMaterials
+            };
+
+            const yamlContent = `materials:
+${manualMaterials.map(material => `  - id: ${material.name}
+    name: "${material.description}"
+    properties:
+      fty: ${material.properties.fty} # Yield strength in MPa
+      ftu: ${material.properties.ftu} # Ultimate tensile strength in MPa
+      E: ${material.properties.E} # Young's modulus in MPa
+      epsilon_u: ${material.properties.epsilon_u} # Fracture strain`).join('\n\n')}`;
+
+            const blob = new Blob([yamlContent], { type: 'text/yaml' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'manual_materials.yaml';
+            link.click();
+        }
+
+        // Make functions globally available for onclick handlers
+        window.calculateWithMaterial = calculateWithMaterial;
+        window.removeMaterial = removeMaterial;
+
+        async function uploadMaterials() {
+            const fileInput = document.getElementById('yamlFile');
+
+            if (!fileInput.files[0]) {
+                alert('Please select a YAML file.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                // Upload the materials
+                const uploadResponse = await fetch('/api/upload-materials', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!uploadResponse.ok) {
+                    const errorText = await uploadResponse.text();
+                    throw new Error('Error uploading materials: ' + errorText);
+                }
+
+                const uploadData = await uploadResponse.json();
+
+                // Update the material select dropdown
+                uploadMaterialSelect.innerHTML = '<option value="">Select a material...</option>';
+                for (const [name, props] of Object.entries(uploadData.materials)) {
+                    const displayName = typeof name === 'string' ? name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : String(name);
+                    uploadMaterialSelect.innerHTML += `<option value="${name}" data-props='${JSON.stringify(props)}'>
+                        ${displayName} - ${props.description || 'Uploaded material'}
+                    </option>`;
+                }
+                uploadMaterialSelect.disabled = false;
+
+                // If only one material, select it automatically
+                if (Object.keys(uploadData.materials).length === 1) {
+                    const materialName = Object.keys(uploadData.materials)[0];
+                    uploadMaterialSelect.value = materialName;
+                    updateCalculateButton();
+                } else {
+                    alert(`Uploaded ${uploadData.count} materials. Please select one from the dropdown.`);
+                }
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function calculateWithUploadedMaterial() {
+            const stressValues = document.getElementById('uploadStressValues').value
+                .split(',')
+                .map(s => parseFloat(s.trim()))
+                .filter(s => !isNaN(s));
+
+            if (stressValues.length === 0) {
+                alert('Please enter at least one valid stress value.');
+                return;
+            }
+
+            if (!uploadMaterialSelect.value) {
+                alert('Please select a material from the dropdown.');
+                return;
+            }
+
+            const selected = uploadMaterialSelect.options[uploadMaterialSelect.selectedIndex];
+            const props = JSON.parse(selected.getAttribute('data-props'));
+
+            // Temporarily set the stress values in the main form for the calculation
+            const originalStressValues = document.getElementById('stressValues').value;
+            document.getElementById('stressValues').value = stressValues.join(', ');
+
+            try {
+                await calculateCorrections(props, uploadMaterialSelect.value);
+            } finally {
+                // Restore the original stress values
+                document.getElementById('stressValues').value = originalStressValues;
+            }
+        }
+
+        function updateCalculateButton() {
+            const hasStressValues = document.getElementById('uploadStressValues').value.trim() !== '';
+            const hasMaterialSelected = uploadMaterialSelect.value !== '';
+            calculateBtn.disabled = !(hasStressValues && hasMaterialSelected);
+        }
+
+        // Handle material selection change for uploaded materials
+        uploadMaterialSelect.addEventListener('change', function () {
+            updateCalculateButton();
+        });
+
+        // Handle stress values input change for uploaded materials
+        document.getElementById('uploadStressValues').addEventListener('input', function () {
+            updateCalculateButton();
+        });
+    });
+</script>
+{% endblock %}

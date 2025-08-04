@@ -1,0 +1,107 @@
+# https://taskfile.dev
+
+version: "3"
+
+vars:
+  APP_NAME: "neuber-correction-server"
+  APP_PATH: "app"
+  MAIN_FILE: "{{.APP_PATH}}.main"
+  PORT: "8000"
+  HOST: "0.0.0.0"
+
+tasks:
+  default:
+    desc: "Show available tasks"
+    cmds:
+      - task --list-all
+    silent: true
+
+  install:
+    desc: "Install dependencies using uv"
+    cmds:
+      - uv sync
+    silent: true
+
+  install-dev:
+    desc: "Install development dependencies"
+    cmds:
+      - uv sync --group dev
+    silent: true
+
+  lint:
+    desc: "Run linting tools (flake8 and pylint)"
+    cmds:
+      - echo "Running flake8..."
+      - uv run flake8 {{.APP_PATH}} --show-source --statistics --count
+      - echo "Running pylint..."
+      - uv run pylint {{.APP_PATH}}/*.py --disable=C0114,C0116
+    silent: true
+
+  lint-fix:
+    desc: "Run linting with auto-fix where possible"
+    cmds:
+      - echo "Running flake8 with auto-fix..."
+      - uv run flake8 {{.APP_PATH}} --max-line-length=120 --extend-ignore=E203,W503
+    silent: true
+
+  test:
+    desc: "Run tests with pytest"
+    cmds:
+      - uv run pytest tests/ -v --tb=short
+    silent: true
+
+  test-cov:
+    desc: "Run tests with coverage report"
+    cmds:
+      - uv run pytest tests/ -v --cov={{.APP_PATH}} --cov-report=html --cov-report=term
+    silent: true
+
+  test-watch:
+    desc: "Run tests in watch mode"
+    cmds:
+      - uv run pytest tests/ -v --tb=short -f
+    silent: true
+
+  serve:
+    desc: "Start the development server"
+    cmds:
+      - echo "Starting {{.APP_NAME}} server on http://{{.HOST}}:{{.PORT}}"
+      - uv run uvicorn {{.MAIN_FILE}}:app --host {{.HOST}} --port {{.PORT}} --reload
+    silent: true
+
+  serve-prod:
+    desc: "Start the production server"
+    cmds:
+      - echo "Starting {{.APP_NAME}} production server on http://{{.HOST}}:{{.PORT}}"
+      - uv run uvicorn {{.MAIN_FILE}}:app --host {{.HOST}} --port {{.PORT}}
+    silent: true
+
+  check:
+    desc: "Run all checks (lint + test)"
+    cmds:
+      - task: lint
+      - task: test
+    silent: true
+
+  clean:
+    desc: "Clean up generated files"
+    cmds:
+      - echo "Cleaning up..."
+      - rm -rf .pytest_cache/
+      - rm -rf htmlcov/
+      - rm -rf .coverage
+      - find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+      - find . -name "*.pyc" -delete 2>/dev/null || true
+    silent: true
+
+  format:
+    desc: "Format code with black"
+    cmds:
+      - uv run black {{.APP_PATH}} --line-length=88
+    silent: true
+
+  type-check:
+    desc: "Run type checking with mypy"
+    cmds:
+      - uv run mypy {{.APP_PATH}} --ignore-missing-imports
+    silent: true

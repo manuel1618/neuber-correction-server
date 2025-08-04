@@ -1,0 +1,22 @@
+[MASTER]
+# Ignore test files
+ignore=test_*
+
+[MESSAGES CONTROL]
+# Disable common noise issues
+disable=
+    C0301, # line too long
+    R0913, # too many arguments
+    R0914, # too many local variables
+
+[FORMAT]
+# Increase max line length to 120
+max-line-length=120
+
+[BASIC]
+# Allow snake_case and camelCase
+good-names=i,j,k,ex,Run,_,id,fy,fu,fy_corr,fu_corr,e_elastic,e_plastic,e_total,e_neuber
+
+[SIMILARITIES]
+# Minimum lines for duplicate code detection
+min-similarity-lines=10

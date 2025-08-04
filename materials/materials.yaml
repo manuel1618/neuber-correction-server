@@ -1,0 +1,40 @@
+materials:
+  - id: AL7050_T74
+    name: "Aluminium, 7050, T74 AMS4107"
+    properties:
+      fty: 365 # Yield strength in MPa
+      ftu: 455 # Ultimate tensile strength in MPa
+      E: 70326 # Young's modulus in MPa
+      epsilon_u: 0.07 # Fracture strain
+
+  - id: AL7050_T73_bar_200
+    name: "Aluminium, 7050, T73 bar >200"
+    properties:
+      fty: 331
+      ftu: 413
+      E: 71000 # placeholder, didnt find a value
+      epsilon_u: 0.07 # placeholder, didnt find a value
+
+  - id: AL_7075_T7351
+    name: "Aluminium 7175/7075 T7351"
+    properties:
+      fty: 434
+      ftu: 503
+      E: 71000 # not sure
+      epsilon_u: 0.08 # not sure
+
+  - id: S355_steel
+    name: "S355 structural steel"
+    properties:
+      fty: 315
+      ftu: 470
+      E: 210000
+      epsilon_u: 0.12
+
+  - id: aluminum_6061
+    name: "Aluminum 6061-T6"
+    properties:
+      fty: 240
+      ftu: 310
+      E: 68900
+      epsilon_u: 0.12
