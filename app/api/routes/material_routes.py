@@ -2,21 +2,40 @@
 Material routes
 """
 
+import time
+
 import yaml
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, Request, UploadFile
 
 from app.models.models import ManualMaterialRequest, load_materials
+from app.utils.session import (
+    check_rate_limit,
+    get_user_materials,
+    log_usage,
+    save_user_materials,
+    update_session_activity,
+)
 
 
 def mk_material_routes(
     app: FastAPI,
-    custom_materials: dict,
 ):
     """Add material routes to the FastAPI app"""
 
     @app.post("/api/upload-materials")
-    async def upload_materials(file: UploadFile = File(...)):
+    async def upload_materials(request: Request, file: UploadFile):
         """Upload custom materials.yaml file"""
+        start_time = time.time()
+        session_id = request.state.session_id
+        ip_address = request.state.ip_address
+
+        # Rate limiting: 5 uploads per minute per IP
+        if not check_rate_limit(request.app.state.db, f"upload:{ip_address}", 5, 1):
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded. Maximum 5 uploads per minute.",
+            )
+
         if not file.filename.endswith(".yaml") and not file.filename.endswith(".yml"):
             raise HTTPException(status_code=400, detail="File must be a YAML file")
 
@@ -94,9 +113,21 @@ def mk_material_routes(
                     detail="Materials must be either a list (new format) or dictionary (old format)",
                 )
 
-            # Store in session (in production, use proper session management)
-            session_id = "default"  # In production, get from session
-            custom_materials[session_id] = materials_data["materials"]
+            # Store in session-specific storage
+            save_user_materials(session_id, materials_data["materials"])
+
+            # Update session activity
+            update_session_activity(request.app.state.db, session_id, ip_address)
+
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                "/api/upload-materials",
+                duration_ms,
+                True,
+                ip_address,
+            )
 
             return {
                 "message": "Materials uploaded successfully",
@@ -105,61 +136,197 @@ def mk_material_routes(
             }
 
         except yaml.YAMLError as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                "/api/upload-materials",
+                duration_ms,
+                False,
+                ip_address,
+                str(e),
+            )
             raise HTTPException(
                 status_code=400, detail=f"Invalid YAML format: {e}"
             ) from e
         except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                "/api/upload-materials",
+                duration_ms,
+                False,
+                ip_address,
+                str(e),
+            )
             raise HTTPException(
                 status_code=500,
                 detail=f"Error processing file: {e}",
             ) from e
 
     @app.post("/api/manual-material")
-    async def add_manual_material(request: ManualMaterialRequest):
+    async def add_manual_material(
+        request: Request,
+        material_request: ManualMaterialRequest,
+    ):
         """Add a manually defined material"""
-        session_id = "default"  # In production, get from session
+        start_time = time.time()
+        session_id = request.state.session_id
+        ip_address = request.state.ip_address
 
-        if session_id not in custom_materials:
-            custom_materials[session_id] = {}
+        # Rate limiting: 10 manual materials per minute per session
+        if not check_rate_limit(request.app.state.db, f"manual:{session_id}", 10, 1):
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded. Maximum 10 manual materials per minute.",
+            )
 
-        # Add the material
-        custom_materials[session_id][request.name] = {
-            "yield_strength": request.yield_strength,
-            "sigma_u": request.sigma_u,
-            "elastic_mod": request.elastic_mod,
-            "eps_u": request.eps_u,
-            "description": request.description or f"Manual material: {request.name}",
-        }
+        try:
+            # Get current user materials
+            user_materials = get_user_materials(session_id)
 
-        return {
-            "message": "Material added successfully",
-            "material": custom_materials[session_id][request.name],
-        }
+            # Add the material
+            user_materials[material_request.name] = {
+                "yield_strength": material_request.yield_strength,
+                "sigma_u": material_request.sigma_u,
+                "elastic_mod": material_request.elastic_mod,
+                "eps_u": material_request.eps_u,
+                "description": material_request.description
+                or f"Manual material: {material_request.name}",
+            }
+
+            # Save updated materials
+            save_user_materials(session_id, user_materials)
+
+            # Update session activity
+            update_session_activity(request.app.state.db, session_id, ip_address)
+
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                "/api/manual-material",
+                duration_ms,
+                True,
+                ip_address,
+            )
+
+            return {
+                "message": "Material added successfully",
+                "material": user_materials[material_request.name],
+            }
+        except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                "/api/manual-material",
+                duration_ms,
+                False,
+                ip_address,
+                str(e),
+            )
+            raise
 
     @app.get("/api/materials")
-    async def get_materials():
+    async def get_materials(request: Request):
         """Get available materials (including custom ones)"""
-        base_materials = load_materials()
-        session_id = "default"  # In production, get from session
+        start_time = time.time()
+        session_id = request.state.session_id
+        ip_address = request.state.ip_address
 
-        # Combine base materials with custom materials
-        all_materials = base_materials["materials"].copy()
-        if session_id in custom_materials:
-            all_materials.update(custom_materials[session_id])
+        # Rate limiting: 30 requests per minute per session
+        if not check_rate_limit(request.app.state.db, f"get:{session_id}", 30, 1):
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded. Maximum 30 requests per minute.",
+            )
 
-        return {"materials": all_materials}
+        try:
+            base_materials = load_materials()
+            user_materials = get_user_materials(session_id)
+
+            # Combine base materials with user materials
+            all_materials = base_materials["materials"].copy()
+            all_materials.update(user_materials)
+
+            # Update session activity
+            update_session_activity(request.app.state.db, session_id, ip_address)
+
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                "/api/materials",
+                duration_ms,
+                True,
+                ip_address,
+            )
+
+            return {"materials": all_materials}
+        except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                "/api/materials",
+                duration_ms,
+                False,
+                ip_address,
+                str(e),
+            )
+            raise
 
     @app.delete("/api/materials/{material_name}")
-    async def delete_custom_material(material_name: str):
+    async def delete_custom_material(request: Request, material_name: str):
         """Delete a custom material"""
-        session_id = "default"  # In production, get from session
+        start_time = time.time()
+        session_id = request.state.session_id
+        ip_address = request.state.ip_address
 
-        if session_id not in custom_materials:
-            raise HTTPException(status_code=404, detail="No custom materials found")
+        # Rate limiting: 20 deletions per minute per session
+        if not check_rate_limit(request.app.state.db, f"delete:{session_id}", 20, 1):
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded. Maximum 20 deletions per minute.",
+            )
 
-        if material_name not in custom_materials[session_id]:
-            raise HTTPException(status_code=404, detail="Material not found")
+        try:
+            user_materials = get_user_materials(session_id)
 
-        del custom_materials[session_id][material_name]
+            if material_name not in user_materials:
+                raise HTTPException(status_code=404, detail="Material not found")
 
-        return {"message": f"Material '{material_name}' deleted successfully"}
+            # Remove the material
+            del user_materials[material_name]
+            save_user_materials(session_id, user_materials)
+
+            # Update session activity
+            update_session_activity(request.app.state.db, session_id, ip_address)
+
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                f"/api/materials/{material_name}",
+                duration_ms,
+                True,
+                ip_address,
+            )
+
+            return {"message": f"Material '{material_name}' deleted successfully"}
+        except HTTPException:
+            raise
+        except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                f"/api/materials/{material_name}",
+                duration_ms,
+                False,
+                ip_address,
+                str(e),
+            )
+            raise

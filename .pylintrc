@@ -1,6 +1,7 @@
 [MASTER]
 # Ignore test files
 ignore=test_*
+extension-pkg-allow-list=_sqlite3
 
 [MESSAGES CONTROL]
 # Disable common noise issues
