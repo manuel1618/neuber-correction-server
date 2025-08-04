@@ -29,11 +29,11 @@ def mk_material_routes(
         session_id = request.state.session_id
         ip_address = request.state.ip_address
 
-        # Rate limiting: 5 uploads per minute per IP
-        if not check_rate_limit(request.app.state.db, f"upload:{ip_address}", 5, 1):
+        # Rate limiting: simplified generous limits
+        if not check_rate_limit(request.app.state.db, f"upload:{ip_address}"):
             raise HTTPException(
                 status_code=429,
-                detail="Rate limit exceeded. Maximum 5 uploads per minute.",
+                detail="Rate limit exceeded. Please try again later.",
             )
 
         if not file.filename.endswith(".yaml") and not file.filename.endswith(".yml"):
@@ -175,11 +175,11 @@ def mk_material_routes(
         session_id = request.state.session_id
         ip_address = request.state.ip_address
 
-        # Rate limiting: 10 manual materials per minute per session
-        if not check_rate_limit(request.app.state.db, f"manual:{session_id}", 10, 1):
+        # Rate limiting: simplified generous limits
+        if not check_rate_limit(request.app.state.db, f"manual:{session_id}"):
             raise HTTPException(
                 status_code=429,
-                detail="Rate limit exceeded. Maximum 10 manual materials per minute.",
+                detail="Rate limit exceeded. Please try again later.",
             )
 
         try:
@@ -236,11 +236,11 @@ def mk_material_routes(
         session_id = request.state.session_id
         ip_address = request.state.ip_address
 
-        # Rate limiting: 30 requests per minute per session
-        if not check_rate_limit(request.app.state.db, f"get:{session_id}", 30, 1):
+        # Rate limiting: simplified generous limits
+        if not check_rate_limit(request.app.state.db, f"get:{session_id}"):
             raise HTTPException(
                 status_code=429,
-                detail="Rate limit exceeded. Maximum 30 requests per minute.",
+                detail="Rate limit exceeded. Please try again later.",
             )
 
         try:
@@ -285,11 +285,11 @@ def mk_material_routes(
         session_id = request.state.session_id
         ip_address = request.state.ip_address
 
-        # Rate limiting: 20 deletions per minute per session
-        if not check_rate_limit(request.app.state.db, f"delete:{session_id}", 20, 1):
+        # Rate limiting: simplified generous limits
+        if not check_rate_limit(request.app.state.db, f"delete:{session_id}"):
             raise HTTPException(
                 status_code=429,
-                detail="Rate limit exceeded. Maximum 20 deletions per minute.",
+                detail="Rate limit exceeded. Please try again later.",
             )
 
         try:

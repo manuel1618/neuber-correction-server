@@ -9,6 +9,7 @@ disable=
     C0301, # line too long
     R0913, # too many arguments
     R0914, # too many local variables
+    W1203, # lazy format % bullshit
 
 [FORMAT]
 # Increase max line length to 120

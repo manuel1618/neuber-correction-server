@@ -38,11 +38,11 @@ def mk_neuber_routes(app: FastAPI):
         session_id = request.state.session_id
         ip_address = request.state.ip_address
 
-        # Rate limiting: 20 calculations per minute per session
-        if not check_rate_limit(request.app.state.db, f"calculate:{session_id}", 20, 1):
+        # Rate limiting: simplified generous limits
+        if not check_rate_limit(request.app.state.db, f"calculate:{session_id}"):
             raise HTTPException(
                 status_code=429,
-                detail="Rate limit exceeded. Maximum 20 calculations per minute.",
+                detail="Rate limit exceeded. Please try again later.",
             )
 
         try:
@@ -132,11 +132,11 @@ def mk_neuber_routes(app: FastAPI):
         session_id = request.state.session_id
         ip_address = request.state.ip_address
 
-        # Rate limiting: 10 plots per minute per session
-        if not check_rate_limit(request.app.state.db, f"plot:{session_id}", 10, 1):
+        # Rate limiting: simplified generous limits
+        if not check_rate_limit(request.app.state.db, f"plot:{session_id}"):
             raise HTTPException(
                 status_code=429,
-                detail="Rate limit exceeded. Maximum 10 plots per minute.",
+                detail="Rate limit exceeded. Please try again later.",
             )
 
         try:

@@ -241,7 +241,15 @@
                 </div>
 
                 <div id="plotContainer" class="mt-3" style="display: none;">
-                    <h6>Neuber Diagram</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Neuber Diagram</h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="plotStressSelect" class="form-label mb-0 small">Select Stress Value:</label>
+                            <select id="plotStressSelect" class="form-select form-select-sm" style="width: auto;">
+                                <option value="">Choose stress value...</option>
+                            </select>
+                        </div>
+                    </div>
                     <img id="plotImage" class="img-fluid" alt="Neuber Diagram">
                 </div>
             </div>
@@ -270,9 +278,12 @@
         const clearMaterialsBtn = document.getElementById('clearMaterialsBtn');
         const materialsList = document.getElementById('materialsList');
         const materialsTableBody = document.getElementById('materialsTableBody');
+        const plotStressSelect = document.getElementById('plotStressSelect');
 
         // Store manually added materials
         let manualMaterials = [];
+        let currentStressValues = []; // Store current stress values for plot selection
+        let lastCalculation = { materialName: '', customMaterial: null }; // Store last calculation details
 
         // Show material info when selected (preset materials)
         materialSelect.addEventListener('change', function () {
@@ -336,16 +347,22 @@
             await calculateWithUploadedMaterial();
         });
 
-        async function calculateCorrections(customMaterial = null, materialName = null) {
+        async function calculateCorrections(customMaterial = null, materialName = null, stressValuesParam = null) {
             resultsDiv.style.display = 'none';
             plotContainer.style.display = 'none';
             resultsTable.innerHTML = '';
             plotImage.src = '';
 
-            const stressValues = document.getElementById('stressValues').value
-                .split(',')
-                .map(s => parseFloat(s.trim()))
-                .filter(s => !isNaN(s));
+            // Use provided stress values or get from the main form
+            let stressValues;
+            if (stressValuesParam) {
+                stressValues = stressValuesParam;
+            } else {
+                stressValues = document.getElementById('stressValues').value
+                    .split(',')
+                    .map(s => parseFloat(s.trim()))
+                    .filter(s => !isNaN(s));
+            }
 
             if (!materialName && !materialSelect.value) {
                 alert('Please select a material and enter at least one valid stress value.');
@@ -397,32 +414,17 @@
                 </tr>`;
                 }
 
-                // Generate plot for the first stress value
+                // Store current stress values and populate plot selector
+                currentStressValues = data.original_stresses;
+                lastCalculation = {
+                    materialName: materialName || materialSelect.value,
+                    customMaterial: customMaterial
+                };
+                populatePlotSelector(data.original_stresses);
+
+                // Generate plot for the first stress value by default
                 if (data.original_stresses.length > 0) {
-                    try {
-                        const plotParams = {
-                            material_name: materialName || materialSelect.value,
-                            stress_value: data.original_stresses[0].toString()
-                        };
-
-                        if (customMaterial) {
-                            plotParams.custom_material = JSON.stringify(customMaterial);
-                        }
-
-                        const plotResp = await fetch('/api/plot', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: new URLSearchParams(plotParams)
-                        });
-
-                        if (plotResp.ok) {
-                            const plotData = await plotResp.json();
-                            plotImage.src = plotData.plot_data;
-                            plotContainer.style.display = '';
-                        }
-                    } catch (plotError) {
-                        console.warn('Could not generate plot:', plotError);
-                    }
+                    await generatePlot(data.original_stresses[0], lastCalculation.materialName, lastCalculation.customMaterial);
                 }
 
                 // Setup download handlers
@@ -512,7 +514,7 @@
                     eps_u: epsU
                 };
 
-                await calculateCorrections(customMaterial, materialName);
+                await calculateCorrections(customMaterial, materialName, stressValues);
 
             } catch (error) {
                 alert('Error: ' + error.message);
@@ -671,7 +673,7 @@
                 eps_u: material.properties.epsilon_u
             };
 
-            await calculateCorrections(customMaterial, material.name);
+            await calculateCorrections(customMaterial, material.name, stressValues);
         }
 
         function downloadMaterialsYaml() {
@@ -772,16 +774,8 @@ ${manualMaterials.map(material => `  - id: ${material.name}
             const selected = uploadMaterialSelect.options[uploadMaterialSelect.selectedIndex];
             const props = JSON.parse(selected.getAttribute('data-props'));
 
-            // Temporarily set the stress values in the main form for the calculation
-            const originalStressValues = document.getElementById('stressValues').value;
-            document.getElementById('stressValues').value = stressValues.join(', ');
-
-            try {
-                await calculateCorrections(props, uploadMaterialSelect.value);
-            } finally {
-                // Restore the original stress values
-                document.getElementById('stressValues').value = originalStressValues;
-            }
+            // Call calculateCorrections directly with the stress values
+            await calculateCorrections(props, uploadMaterialSelect.value, stressValues);
         }
 
         function updateCalculateButton() {
@@ -799,6 +793,52 @@ ${manualMaterials.map(material => `  - id: ${material.name}
         document.getElementById('uploadStressValues').addEventListener('input', function () {
             updateCalculateButton();
         });
+
+        // Handle plot stress selector change
+        plotStressSelect.addEventListener('change', async function () {
+            const selectedStress = parseFloat(this.value);
+            if (!isNaN(selectedStress)) {
+                await generatePlot(selectedStress, lastCalculation.materialName, lastCalculation.customMaterial);
+            }
+        });
+
+        function populatePlotSelector(stressValues) {
+            plotStressSelect.innerHTML = '<option value="">Choose stress value...</option>';
+            stressValues.forEach((stress, index) => {
+                plotStressSelect.innerHTML += `<option value="${stress}">${stress} MPa</option>`;
+            });
+            // Select the first value by default
+            if (stressValues.length > 0) {
+                plotStressSelect.value = stressValues[0];
+            }
+        }
+
+        async function generatePlot(stressValue, materialName, customMaterial) {
+            try {
+                const plotParams = {
+                    material_name: materialName,
+                    stress_value: stressValue.toString()
+                };
+
+                if (customMaterial) {
+                    plotParams.custom_material = JSON.stringify(customMaterial);
+                }
+
+                const plotResp = await fetch('/api/plot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(plotParams)
+                });
+
+                if (plotResp.ok) {
+                    const plotData = await plotResp.json();
+                    plotImage.src = plotData.plot_data;
+                    plotContainer.style.display = '';
+                }
+            } catch (plotError) {
+                console.warn('Could not generate plot:', plotError);
+            }
+        }
     });
 </script>
 {% endblock %}

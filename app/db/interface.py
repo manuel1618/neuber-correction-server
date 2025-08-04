@@ -61,5 +61,13 @@ class DBInterface(ABC):
         """Get total number of active sessions"""
 
     @abstractmethod
+    def clear_all_data(self) -> None:
+        """Clear all data from database (startup cleanup)"""
+
+    @abstractmethod
+    def cleanup_expired_sessions(self, ttl_seconds: int) -> None:
+        """Remove sessions older than TTL"""
+
+    @abstractmethod
     def close(self) -> None:
         """Close database connection"""

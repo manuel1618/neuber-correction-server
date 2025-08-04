@@ -9,10 +9,10 @@ dependencies = [
     "jinja2>=3.1.6",
     "matplotlib>=3.10.0",
     "neuber-correction>=0.1.3a1",
+    "pydantic-settings>=2.0.0",
     "python-multipart>=0.0.20",
     "pyyaml>=6.0.2",
     "slowapi>=0.1.9",
-    "sqlalchemy>=2.0.42",
     "uvicorn>=0.35.0",
 ]
 

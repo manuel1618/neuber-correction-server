@@ -48,12 +48,13 @@ def update_session_activity(db: DBInterface, session_id: str, ip_address: str):
     db.update_session_activity(session_id, ip_address)
 
 
-def check_rate_limit(
-    db: DBInterface, key: str, limit: int, window_minutes: int = 1
-) -> bool:
-    """Check if rate limit is exceeded"""
+def check_rate_limit(db: DBInterface, key: str) -> bool:
+    """Check if rate limit is exceeded using simplified settings"""
+    from app.utils.settings import Settings
+
+    settings = Settings()
     now = datetime.now()
-    window_start = now - timedelta(minutes=window_minutes)
+    window_start = now - timedelta(seconds=settings.rate_limit_window)
 
     # Get or create rate limit record
     rate_limit = db.get_rate_limit(key)
@@ -68,7 +69,7 @@ def check_rate_limit(
         return True
 
     # Check if limit exceeded
-    if rate_limit["requests"] >= limit:
+    if rate_limit["requests"] >= settings.rate_limit_requests:
         return False
 
     # Increment request count

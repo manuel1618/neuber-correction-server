@@ -5,6 +5,8 @@ This server provides an API for stress correction using the Neuber method.
 It allows users to upload materials and perform stress corrections.
 """
 
+import asyncio
+import logging
 import uuid
 from contextlib import asynccontextmanager
 
@@ -18,12 +20,18 @@ from slowapi.util import get_remote_address
 from app.api.__main__ import mk_routes
 from app.db.sqlite3 import SQLiteDatabase
 from app.utils.session import get_client_ip, get_session_id
+from app.utils.settings import Settings
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+settings = Settings()
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
 # Initialize database
-db = SQLiteDatabase("neuber_correction.db")
+db = SQLiteDatabase(settings.database_path)
 
 
 @asynccontextmanager
@@ -31,9 +39,40 @@ async def lifespan(my_app: FastAPI):
     """Application lifespan events"""
     # Startup
     db.create_tables()
+
+    # Clear all data at startup
+    logger.info("Clearing all database data at startup...")
+    db.clear_all_data()
+
+    # Store database and settings in app state
     my_app.state.db = db
+    my_app.state.settings = settings
+
+    async def periodic_cleanup():
+        """Periodic cleanup of expired data"""
+        while True:
+            try:
+                await asyncio.sleep(
+                    settings.database_ttl
+                )  # Run cleanup every TTL period
+                logger.info("Running periodic database cleanup...")
+                db.cleanup_expired_sessions(settings.database_ttl)
+                logger.info("Database cleanup completed")
+            except Exception as e:
+                logger.error(f"Error during periodic cleanup: {e}")
+                raise e
+
+    # Start cleanup task
+    cleanup_task = asyncio.create_task(periodic_cleanup())
+
     yield
+
     # Shutdown
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
     db.close()
 
 

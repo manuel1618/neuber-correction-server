@@ -3,7 +3,7 @@ SQLite database implementation
 """
 
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 from app.db.interface import DBInterface
@@ -147,6 +147,30 @@ class SQLiteDatabase(DBInterface):
         cursor.execute("SELECT COUNT(*) FROM sessions")
         result = cursor.fetchone()
         return result[0] if result else 0
+
+    def clear_all_data(self) -> None:
+        """Clear all data from database (startup cleanup)"""
+        cursor = self.connection.cursor()
+        cursor.execute("DELETE FROM sessions")
+        cursor.execute("DELETE FROM rate_limits")
+        cursor.execute("DELETE FROM usage_logs")
+        self.connection.commit()
+
+    def cleanup_expired_sessions(self, ttl_seconds: int) -> None:
+        """Remove sessions older than TTL"""
+        cutoff_time = datetime.now() - timedelta(seconds=ttl_seconds)
+        cursor = self.connection.cursor()
+
+        # Delete expired sessions
+        cursor.execute("DELETE FROM sessions WHERE last_activity < ?", (cutoff_time,))
+
+        # Delete expired rate limits
+        cursor.execute("DELETE FROM rate_limits WHERE window_start < ?", (cutoff_time,))
+
+        # Delete expired usage logs
+        cursor.execute("DELETE FROM usage_logs WHERE timestamp < ?", (cutoff_time,))
+
+        self.connection.commit()
 
     def close(self) -> None:
         """Close database connection"""
