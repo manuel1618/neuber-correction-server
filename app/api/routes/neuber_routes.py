@@ -58,7 +58,7 @@ def mk_neuber_routes(app: FastAPI):
                 all_materials.update(user_materials)
 
                 if correction_request.material_name not in all_materials:
-                    raise HTTPException(status_code=400, detail="Material not found")
+                    raise HTTPException(status_code=404, detail="Material not found")
                 material_props = all_materials[correction_request.material_name]
 
             material = MaterialForNeuberCorrection(
@@ -160,7 +160,7 @@ def mk_neuber_routes(app: FastAPI):
                 # Check if material exists in materials dictionary
                 if material_name not in all_materials:
                     raise HTTPException(
-                        status_code=400, detail=f"Material '{material_name}' not found"
+                        status_code=404, detail=f"Material '{material_name}' not found"
                     )
                 material_props = all_materials[material_name]
 

@@ -34,10 +34,31 @@ def mk_index_routes(app: FastAPI, templates: Jinja2Templates):
             db_status = f"error: {str(e)}"
             session_count = 0
 
-        return {
+        # Rate limiting
+        from app.utils.session import check_rate_limit
+
+        allowed, rate_info = check_rate_limit(db, f"health:{request.state.ip_address}")
+
+        if not allowed:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+        response_data = {
             "status": "healthy",
             "timestamp": datetime.now().isoformat(),
             "version": "1.0.0",
             "database": db_status,
             "session_count": session_count,
         }
+
+        from fastapi.responses import JSONResponse
+
+        response = JSONResponse(content=response_data)
+
+        # Set rate limiting headers
+        response.headers["X-RateLimit-Limit"] = str(rate_info["limit"])
+        response.headers["X-RateLimit-Remaining"] = str(rate_info["remaining"])
+        response.headers["X-RateLimit-Reset"] = str(rate_info["reset"])
+
+        return response

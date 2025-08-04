@@ -214,7 +214,10 @@ def mk_material_routes(
 
             return {
                 "message": "Material added successfully",
-                "material": user_materials[material_request.name],
+                "material": {
+                    "name": material_request.name,
+                    **user_materials[material_request.name],
+                },
             }
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
@@ -237,7 +240,8 @@ def mk_material_routes(
         ip_address = request.state.ip_address
 
         # Rate limiting: simplified generous limits
-        if not check_rate_limit(request.app.state.db, f"get:{session_id}"):
+        allowed, rate_info = check_rate_limit(request.app.state.db, f"get:{session_id}")
+        if not allowed:
             raise HTTPException(
                 status_code=429,
                 detail="Rate limit exceeded. Please try again later.",
@@ -264,13 +268,78 @@ def mk_material_routes(
                 ip_address,
             )
 
-            return {"materials": all_materials}
+            from fastapi.responses import JSONResponse
+
+            response = JSONResponse(content={"materials": all_materials})
+
+            # Set rate limiting headers
+            response.headers["X-RateLimit-Limit"] = str(rate_info["limit"])
+            response.headers["X-RateLimit-Remaining"] = str(rate_info["remaining"])
+            response.headers["X-RateLimit-Reset"] = str(rate_info["reset"])
+
+            return response
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
             log_usage(
                 request.app.state.db,
                 session_id,
                 "/api/materials",
+                duration_ms,
+                False,
+                ip_address,
+                str(e),
+            )
+            raise
+
+    @app.get("/api/materials/{material_name}")
+    async def get_specific_material(request: Request, material_name: str):
+        """Get a specific material by name"""
+        start_time = time.time()
+        session_id = request.state.session_id
+        ip_address = request.state.ip_address
+
+        # Rate limiting: simplified generous limits
+        if not check_rate_limit(request.app.state.db, f"get_specific:{session_id}"):
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded. Please try again later.",
+            )
+
+        try:
+            base_materials = load_materials()
+            user_materials = get_user_materials(session_id)
+
+            # Combine base materials with user materials
+            all_materials = base_materials["materials"].copy()
+            all_materials.update(user_materials)
+
+            if material_name not in all_materials:
+                raise HTTPException(status_code=404, detail="Material not found")
+
+            material_data = all_materials[material_name]
+
+            # Update session activity
+            update_session_activity(request.app.state.db, session_id, ip_address)
+
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                f"/api/materials/{material_name}",
+                duration_ms,
+                True,
+                ip_address,
+            )
+
+            return {"material": {"name": material_name, **material_data}}
+        except HTTPException:
+            raise
+        except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                f"/api/materials/{material_name}",
                 duration_ms,
                 False,
                 ip_address,

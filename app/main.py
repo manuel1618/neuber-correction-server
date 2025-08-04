@@ -10,6 +10,7 @@ import logging
 import uuid
 from contextlib import asynccontextmanager
 
+import matplotlib
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -22,6 +23,7 @@ from app.db.sqlite3 import SQLiteDatabase
 from app.utils.session import get_client_ip, get_session_id
 from app.utils.settings import Settings
 
+matplotlib.use("Agg")  # Use non-interactive backend
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

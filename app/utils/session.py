@@ -45,10 +45,14 @@ def cleanup_expired_sessions():
 
 def update_session_activity(db: DBInterface, session_id: str, ip_address: str):
     """Update session activity in database"""
-    db.update_session_activity(session_id, ip_address)
+    try:
+        db.update_session_activity(session_id, ip_address)
+    except Exception:
+        # Silently handle database errors
+        pass
 
 
-def check_rate_limit(db: DBInterface, key: str) -> bool:
+def check_rate_limit(db: DBInterface, key: str) -> tuple[bool, dict]:
     """Check if rate limit is exceeded using simplified settings"""
     from app.utils.settings import Settings
 
@@ -56,25 +60,76 @@ def check_rate_limit(db: DBInterface, key: str) -> bool:
     now = datetime.now()
     window_start = now - timedelta(seconds=settings.rate_limit_window)
 
-    # Get or create rate limit record
-    rate_limit = db.get_rate_limit(key)
+    # Handle None database
+    if db is None:
+        return True, {
+            "limit": settings.rate_limit_requests,
+            "remaining": settings.rate_limit_requests - 1,
+            "reset": int(
+                (now + timedelta(seconds=settings.rate_limit_window)).timestamp()
+            ),
+        }
 
-    if not rate_limit:
-        db.create_rate_limit(key, now)
-        return True
+    try:
+        # Get or create rate limit record
+        rate_limit = db.get_rate_limit(key)
 
-    # Check if window has expired
-    if rate_limit["window_start"] < window_start:
-        db.update_rate_limit(key, 1, now)
-        return True
+        if not rate_limit:
+            db.create_rate_limit(key, now)
+            return True, {
+                "limit": settings.rate_limit_requests,
+                "remaining": settings.rate_limit_requests - 1,
+                "reset": int(
+                    (now + timedelta(seconds=settings.rate_limit_window)).timestamp()
+                ),
+            }
 
-    # Check if limit exceeded
-    if rate_limit["requests"] >= settings.rate_limit_requests:
-        return False
+        # Check if window has expired
+        if rate_limit["window_start"] < window_start:
+            db.update_rate_limit(key, 1, now)
+            return True, {
+                "limit": settings.rate_limit_requests,
+                "remaining": settings.rate_limit_requests - 1,
+                "reset": int(
+                    (now + timedelta(seconds=settings.rate_limit_window)).timestamp()
+                ),
+            }
 
-    # Increment request count
-    db.update_rate_limit(key, rate_limit["requests"] + 1, rate_limit["window_start"])
-    return True
+        # Check if limit exceeded
+        if rate_limit["requests"] >= settings.rate_limit_requests:
+            return False, {
+                "limit": settings.rate_limit_requests,
+                "remaining": 0,
+                "reset": int(
+                    (
+                        rate_limit["window_start"]
+                        + timedelta(seconds=settings.rate_limit_window)
+                    ).timestamp()
+                ),
+            }
+
+        # Increment request count
+        new_count = rate_limit["requests"] + 1
+        db.update_rate_limit(key, new_count, rate_limit["window_start"])
+        return True, {
+            "limit": settings.rate_limit_requests,
+            "remaining": settings.rate_limit_requests - new_count,
+            "reset": int(
+                (
+                    rate_limit["window_start"]
+                    + timedelta(seconds=settings.rate_limit_window)
+                ).timestamp()
+            ),
+        }
+    except Exception:
+        # If database fails, allow the request but return default rate info
+        return True, {
+            "limit": settings.rate_limit_requests,
+            "remaining": settings.rate_limit_requests - 1,
+            "reset": int(
+                (now + timedelta(seconds=settings.rate_limit_window)).timestamp()
+            ),
+        }
 
 
 def log_usage(
@@ -87,7 +142,13 @@ def log_usage(
     error_message: Optional[str] = None,
 ):
     """Log usage analytics"""
-    db.log_usage(session_id, endpoint, duration_ms, success, ip_address, error_message)
+    try:
+        db.log_usage(
+            session_id, endpoint, duration_ms, success, ip_address, error_message
+        )
+    except Exception:
+        # Silently handle database errors
+        pass
 
 
 def get_client_ip(request: Request) -> str:

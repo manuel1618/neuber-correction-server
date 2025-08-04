@@ -3,7 +3,8 @@ CREATE TABLE sessions (
     session_id TEXT PRIMARY KEY,
     created_at TIMESTAMP,
     last_activity TIMESTAMP,
-    request_count INTEGER DEFAULT 0
+    request_count INTEGER DEFAULT 0,
+    ip_address TEXT
 );
 
 -- Rate limiting table  
@@ -20,5 +21,7 @@ CREATE TABLE usage_logs (
     endpoint TEXT,
     duration_ms INTEGER,
     success BOOLEAN,
-    timestamp TIMESTAMP
+    error_message TEXT,
+    timestamp TIMESTAMP,
+    ip_address TEXT
 );
