@@ -1,0 +1,31 @@
+[Unit]
+Description=Neuber Correction Server
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=ramsaier
+WorkingDirectory=/home/ramsaier/neuber-correction-server
+ExecStart=/home/ramsaier/neuber-correction-server/start_server.sh 8000
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=neuber-server
+
+# Environment variables
+Environment=PYTHONUNBUFFERED=1
+Environment=UV_SILENT=1
+Environment=PATH=/home/ramsaier/.local/bin:/home/ramsaier/.cargo/bin:/usr/local/bin:/usr/bin:/bin
+Environment=HOME=/home/ramsaier
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=false
+ReadWritePaths=/home/ramsaier/neuber-correction-server
+
+[Install]
+WantedBy=multi-user.target 
