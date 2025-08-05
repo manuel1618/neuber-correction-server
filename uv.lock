@@ -16,16 +16,16 @@ wheels = [
 
 [[package]]
 name = "anyio"
-version = "4.9.0"
+version = "4.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "idna" },
     { name = "sniffio" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/95/7d/4c1bd541d4dffa1b52bd83fb8527089e097a106fc90b467a7313b105f840/anyio-4.9.0.tar.gz", hash = "sha256:673c0c244e15788651a4ff38710fea9675823028a6f08a5eda409e0c9840a028", size = 190949 }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/b4/636b3b65173d3ce9a38ef5f0522789614e590dab6a8d505340a4efe4c567/anyio-4.10.0.tar.gz", hash = "sha256:3f3fae35c96039744587aa5b8371e7e8e603c0702999535961dd336026973ba6", size = 213252 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a1/ee/48ca1a7c89ffec8b6a0c5d02b89c305671d5ffd8d3c94acf8b8c408575bb/anyio-4.9.0-py3-none-any.whl", hash = "sha256:9f76d541cad6e36af7beb62e978876f3b41e3e04f2c1fbf0884604c0a9c4d93c", size = 100916 },
+    { url = "https://files.pythonhosted.org/packages/6f/12/e5e0282d673bb9746bacfb6e2dba8719989d3660cdb2ea79aee9a9651afb/anyio-4.10.0-py3-none-any.whl", hash = "sha256:60e474ac86736bbfd6f210f7a61218939c318f43f9972497381f1c5e930ed3d1", size = 107213 },
 ]
 
 [[package]]
@@ -556,15 +556,15 @@ wheels = [
 
 [[package]]
 name = "neuber-correction"
-version = "0.1.3a1"
+version = "0.1.4a0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e3/6c/1917013f4b856a57c36424ad3e9aa57f3fdc362a40077588f325fb40f683/neuber_correction-0.1.3a1.tar.gz", hash = "sha256:6d5cd92fe6b12092066d8a9e5907b56421e7801f01d21ae5240235a1364a971b", size = 15157 }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/87/7c4f038c50a262185da2f6008b448e1516152272f0587f87126a6d5ff597/neuber_correction-0.1.4a0.tar.gz", hash = "sha256:f27226d61927388821a2af0fe4ef1745f9e7ab4a9b4eb02ab98b8aa97abfebc9", size = 15322 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/26/c1/3abb490716726eb3537a883db826b3fba3078b4803dd53e03eb98e3b6f7a/neuber_correction-0.1.3a1-py3-none-any.whl", hash = "sha256:5a998bb652108e4a6251ff1bddfa83756aecdd90cf57a34f66a3992b9dcc3fa3", size = 15409 },
+    { url = "https://files.pythonhosted.org/packages/54/ab/fb488158bf6f08c8901667f0ebfc54dbe61cd16b118373fb5b0cc47ac364/neuber_correction-0.1.4a0-py3-none-any.whl", hash = "sha256:0cdf531927994dc32578427350cf4025f8490e4075e26936aa09415272a78ad1", size = 15592 },
 ]
 
 [[package]]
