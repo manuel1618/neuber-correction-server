@@ -432,7 +432,9 @@
                     if (plotImage.src) {
                         const link = document.createElement('a');
                         link.href = plotImage.src;
-                        link.download = `neuber_diagram_${materialName || materialSelect.value}_${data.original_stresses[0]}.png`;
+                        // Use the currently selected stress value from the plot selector
+                        const selectedStress = plotStressSelect.value || data.original_stresses[0];
+                        link.download = `neuber_diagram_${materialName || materialSelect.value}_${selectedStress}.png`;
                         link.click();
                     }
                 };
