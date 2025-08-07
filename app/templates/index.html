@@ -800,7 +800,15 @@ ${manualMaterials.map(material => `  - id: ${material.name}
         plotStressSelect.addEventListener('change', async function () {
             const selectedStress = parseFloat(this.value);
             if (!isNaN(selectedStress)) {
+                // Disable download button while generating new plot
+                downloadPlotBtn.disabled = true;
+                downloadPlotBtn.textContent = 'Generating Plot...';
+
                 await generatePlot(selectedStress, lastCalculation.materialName, lastCalculation.customMaterial);
+
+                // Re-enable download button after plot is generated
+                downloadPlotBtn.disabled = false;
+                downloadPlotBtn.innerHTML = '<i class="bi bi-download"></i> Download Plot';
             }
         });
 
@@ -836,6 +844,8 @@ ${manualMaterials.map(material => `  - id: ${material.name}
                     const plotData = await plotResp.json();
                     plotImage.src = plotData.plot_data;
                     plotContainer.style.display = '';
+                } else {
+                    console.warn('Failed to generate plot:', plotResp.status);
                 }
             } catch (plotError) {
                 console.warn('Could not generate plot:', plotError);
