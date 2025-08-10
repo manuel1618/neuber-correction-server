@@ -4,7 +4,7 @@ FROM python:3.11-slim
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-ENV PORT=8080
+ENV PORT=8000
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -32,7 +32,7 @@ RUN useradd --create-home --shell /bin/bash app && \
 USER app
 
 # Expose the port
-EXPOSE 8080
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
