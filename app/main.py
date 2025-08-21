@@ -118,6 +118,19 @@ async def session_middleware(request: Request, call_next):
                 samesite="lax",
             )
 
+        # Propagate custom title from header to cookie for template usage
+        custom_title_header = request.headers.get("X-Custom-Title")
+        if custom_title_header:
+            # Limit length to avoid oversized cookies
+            safe_title = custom_title_header.strip()[:200]
+            response.set_cookie(
+                key="custom_title",
+                value=safe_title,
+                max_age=3600,
+                httponly=False,
+                samesite="lax",
+            )
+
         # Add request ID to response headers
         response.headers["X-Request-ID"] = request_id
 

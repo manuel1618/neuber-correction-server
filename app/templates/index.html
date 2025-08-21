@@ -63,6 +63,13 @@
                                 <div class="form-text">Enter multiple stress values separated by commas</div>
                             </div>
 
+                            <div class="mb-3">
+                                <label for="customTitle" class="form-label">Custom Title (optional)</label>
+                                <input type="text" class="form-control" id="customTitle"
+                                    placeholder="e.g., Project Alpha - Neuber Analysis">
+                                <div class="form-text">Used for page title, navbar, and plot title</div>
+                            </div>
+
                             <button type="submit" class="btn btn-primary">Calculate Corrections</button>
                         </form>
                     </div>
@@ -121,6 +128,12 @@
                                 <div class="form-text">Enter multiple stress values separated by commas</div>
                             </div>
 
+                            <div class="mb-3">
+                                <label for="manualCustomTitle" class="form-label">Custom Title (optional)</label>
+                                <input type="text" class="form-control" id="manualCustomTitle"
+                                    placeholder="e.g., Custom Material Study - Run 1">
+                            </div>
+
                             <div class="d-flex gap-2 mb-3">
                                 <button type="submit" class="btn btn-primary">Add Material & Calculate</button>
                                 <button type="button" id="addMaterialBtn" class="btn btn-outline-secondary">Add Material
@@ -171,6 +184,12 @@
                                     placeholder="Enter stress values separated by commas (e.g., 400, 500, 600)"
                                     required></textarea>
                                 <div class="form-text">Enter multiple stress values separated by commas</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="uploadCustomTitle" class="form-label">Custom Title (optional)</label>
+                                <input type="text" class="form-control" id="uploadCustomTitle"
+                                    placeholder="e.g., Imported Materials Batch">
                             </div>
 
                             <div class="mb-3">
@@ -279,6 +298,9 @@
         const materialsList = document.getElementById('materialsList');
         const materialsTableBody = document.getElementById('materialsTableBody');
         const plotStressSelect = document.getElementById('plotStressSelect');
+        const customTitleInput = document.getElementById('customTitle');
+        const manualCustomTitleInput = document.getElementById('manualCustomTitle');
+        const uploadCustomTitleInput = document.getElementById('uploadCustomTitle');
 
         // Store manually added materials
         let manualMaterials = [];
@@ -347,7 +369,7 @@
             await calculateWithUploadedMaterial();
         });
 
-        async function calculateCorrections(customMaterial = null, materialName = null, stressValuesParam = null) {
+        async function calculateCorrections(customMaterial = null, materialName = null, stressValuesParam = null, customTitleParam = null) {
             resultsDiv.style.display = 'none';
             plotContainer.style.display = 'none';
             resultsTable.innerHTML = '';
@@ -363,6 +385,11 @@
                     .map(s => parseFloat(s.trim()))
                     .filter(s => !isNaN(s));
             }
+
+            // Resolve custom title
+            const customTitle = (customTitleParam !== null && customTitleParam !== undefined)
+                ? customTitleParam
+                : (customTitleInput ? customTitleInput.value.trim() : '');
 
             if (!materialName && !materialSelect.value) {
                 alert('Please select a material and enter at least one valid stress value.');
@@ -384,7 +411,10 @@
                 // Call API
                 const response = await fetch('/api/correct', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(customTitle ? { 'X-Custom-Title': customTitle } : {})
+                    },
                     body: JSON.stringify({
                         material_name: materialName || materialSelect.value,
                         stress_values: stressValues,
@@ -418,13 +448,19 @@
                 currentStressValues = data.original_stresses;
                 lastCalculation = {
                     materialName: materialName || materialSelect.value,
-                    customMaterial: customMaterial
+                    customMaterial: customMaterial,
+                    customTitle: customTitle
                 };
                 populatePlotSelector(data.original_stresses);
 
                 // Generate plot for the first stress value by default
                 if (data.original_stresses.length > 0) {
-                    await generatePlot(data.original_stresses[0], lastCalculation.materialName, lastCalculation.customMaterial);
+                    await generatePlot(
+                        data.original_stresses[0],
+                        lastCalculation.materialName,
+                        lastCalculation.customMaterial,
+                        lastCalculation.customTitle
+                    );
                 }
 
                 // Setup download handlers
@@ -434,7 +470,8 @@
                         link.href = plotImage.src;
                         // Use the currently selected stress value from the plot selector
                         const selectedStress = plotStressSelect.value || data.original_stresses[0];
-                        link.download = `neuber_diagram_${materialName || materialSelect.value}_${selectedStress}.png`;
+                        const filenameTitle = (customTitle || materialName || materialSelect.value || 'neuber').replace(/\s+/g, '_');
+                        link.download = `neuber_diagram_${filenameTitle}_${selectedStress}.png`;
                         link.click();
                     }
                 };
@@ -450,7 +487,8 @@
                     const blob = new Blob([csv], { type: 'text/csv' });
                     const link = document.createElement('a');
                     link.href = URL.createObjectURL(blob);
-                    link.download = `neuber_correction_${materialName || materialSelect.value}.csv`;
+                    const filenameTitle = (customTitle || materialName || materialSelect.value || 'neuber').replace(/\s+/g, '_');
+                    link.download = `neuber_correction_${filenameTitle}.csv`;
                     link.click();
                 };
 
@@ -474,6 +512,7 @@
                 .split(',')
                 .map(s => parseFloat(s.trim()))
                 .filter(s => !isNaN(s));
+            const customTitle = manualCustomTitleInput ? manualCustomTitleInput.value.trim() : '';
 
             if (!materialName || isNaN(yieldStrength) || isNaN(sigmaU) || isNaN(elasticMod) || isNaN(epsU)) {
                 alert('Please fill in all required material properties.');
@@ -516,7 +555,7 @@
                     eps_u: epsU
                 };
 
-                await calculateCorrections(customMaterial, materialName, stressValues);
+                await calculateCorrections(customMaterial, materialName, stressValues, customTitle);
 
             } catch (error) {
                 alert('Error: ' + error.message);
@@ -530,6 +569,7 @@
             const elasticMod = parseFloat(document.getElementById('elasticMod').value);
             const epsU = parseFloat(document.getElementById('epsU').value);
             const description = document.getElementById('manualDescription').value;
+            const customTitle = manualCustomTitleInput ? manualCustomTitleInput.value.trim() : '';
 
             if (!materialName || isNaN(yieldStrength) || isNaN(sigmaU) || isNaN(elasticMod) || isNaN(epsU)) {
                 alert('Please fill in all required material properties.');
@@ -540,7 +580,10 @@
                 // Add the material to backend
                 const addResponse = await fetch('/api/manual-material', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(customTitle ? { 'X-Custom-Title': customTitle } : {})
+                    },
                     body: JSON.stringify({
                         name: materialName,
                         yield_strength: yieldStrength,
@@ -662,6 +705,7 @@
                 .split(',')
                 .map(s => parseFloat(s.trim()))
                 .filter(s => !isNaN(s));
+            const customTitle = manualCustomTitleInput ? manualCustomTitleInput.value.trim() : '';
 
             if (stressValues.length === 0) {
                 alert('Please enter stress values to calculate.');
@@ -675,7 +719,7 @@
                 eps_u: material.properties.epsilon_u
             };
 
-            await calculateCorrections(customMaterial, material.name, stressValues);
+            await calculateCorrections(customMaterial, material.name, stressValues, customTitle);
         }
 
         function downloadMaterialsYaml() {
@@ -721,8 +765,12 @@ ${manualMaterials.map(material => `  - id: ${material.name}
 
             try {
                 // Upload the materials
+                const customTitle = uploadCustomTitleInput ? uploadCustomTitleInput.value.trim() : '';
                 const uploadResponse = await fetch('/api/upload-materials', {
                     method: 'POST',
+                    headers: {
+                        ...(customTitle ? { 'X-Custom-Title': customTitle } : {})
+                    },
                     body: formData
                 });
 
@@ -775,9 +823,10 @@ ${manualMaterials.map(material => `  - id: ${material.name}
 
             const selected = uploadMaterialSelect.options[uploadMaterialSelect.selectedIndex];
             const props = JSON.parse(selected.getAttribute('data-props'));
+            const customTitle = uploadCustomTitleInput ? uploadCustomTitleInput.value.trim() : '';
 
             // Call calculateCorrections directly with the stress values
-            await calculateCorrections(props, uploadMaterialSelect.value, stressValues);
+            await calculateCorrections(props, uploadMaterialSelect.value, stressValues, customTitle);
         }
 
         function updateCalculateButton() {
@@ -804,7 +853,12 @@ ${manualMaterials.map(material => `  - id: ${material.name}
                 downloadPlotBtn.disabled = true;
                 downloadPlotBtn.textContent = 'Generating Plot...';
 
-                await generatePlot(selectedStress, lastCalculation.materialName, lastCalculation.customMaterial);
+                await generatePlot(
+                    selectedStress,
+                    lastCalculation.materialName,
+                    lastCalculation.customMaterial,
+                    lastCalculation.customTitle
+                );
 
                 // Re-enable download button after plot is generated
                 downloadPlotBtn.disabled = false;
@@ -823,7 +877,7 @@ ${manualMaterials.map(material => `  - id: ${material.name}
             }
         }
 
-        async function generatePlot(stressValue, materialName, customMaterial) {
+        async function generatePlot(stressValue, materialName, customMaterial, customTitle) {
             try {
                 const plotParams = {
                     material_name: materialName,
@@ -833,10 +887,16 @@ ${manualMaterials.map(material => `  - id: ${material.name}
                 if (customMaterial) {
                     plotParams.custom_material = JSON.stringify(customMaterial);
                 }
+                if (customTitle) {
+                    plotParams.custom_title = customTitle;
+                }
 
                 const plotResp = await fetch('/api/plot', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        ...(customTitle ? { 'X-Custom-Title': customTitle } : {})
+                    },
                     body: new URLSearchParams(plotParams)
                 });
 

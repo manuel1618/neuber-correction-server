@@ -18,8 +18,15 @@ def mk_index_routes(app: FastAPI, templates: Jinja2Templates):
     async def index(request: Request):
         """Main page with form"""
         materials = load_materials()
+        # Pull custom title from cookie if present
+        custom_title = request.cookies.get("custom_title")
         return templates.TemplateResponse(
-            "index.html", {"request": request, "materials": materials["materials"]}
+            "index.html",
+            {
+                "request": request,
+                "materials": materials["materials"],
+                "custom_title": custom_title,
+            },
         )
 
     @app.get("/health")
