@@ -18,7 +18,7 @@ cd docker && docker-compose up -d --build
 ```
 or simple:
 ```bash
-docker run -p 8080:8080 neuber-correction-server:latest
+docker run -p 80:80 neuber-correction-server:latest
 ```
 
 # View logs
@@ -47,5 +47,5 @@ docker ps | grep neuber-correction-server
 ```
 
 # Access the application
-# Web Interface: http://localhost:8080
-# API Docs: http://localhost:8080/docs
+# Web Interface: http://localhost:80
+# API Docs: http://localhost:80/docs
