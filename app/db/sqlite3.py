@@ -19,6 +19,13 @@ class SQLiteDatabase(DBInterface):
         self.db_path = db_path
         self._local = threading.local()
 
+        # Ensure the directory exists for the database file
+        import os
+
+        db_dir = os.path.dirname(db_path)
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
+
     def _get_connection(self) -> sqlite3.Connection:
         """Get or create a thread-local database connection"""
         if not hasattr(self._local, "connection"):
@@ -33,7 +40,16 @@ class SQLiteDatabase(DBInterface):
     def create_tables(self) -> None:
         """Create all required database tables"""
         try:
-            with open("db/migrations/2025-08-04-init.sql", "r", encoding="utf-8") as f:
+            import os
+
+            # Get the absolute path to the migration file
+            migration_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                "db",
+                "migrations",
+                "2025-08-04-init.sql",
+            )
+            with open(migration_path, "r", encoding="utf-8") as f:
                 sql_script = f.read()
 
             connection = self._get_connection()
