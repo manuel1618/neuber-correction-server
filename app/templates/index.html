@@ -4,11 +4,24 @@
 {% block title %}Neuber Correction Calculator{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-6">
-        <div class="card">
+<!-- Hero Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="text-center mb-4">
+            <h1 class="display-4 fw-bold text-primary mb-3">Neuber Correction Calculator</h1>
+            <p class="lead text-muted">Professional stress correction analysis for engineering applications</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
             <div class="card-header">
-                <h5 class="card-title mb-0">Neuber Correction Calculator</h5>
+                <h5 class="card-title mb-0 d-flex align-items-center">
+                    <i class="bi bi-calculator me-2 text-primary"></i>
+                    Neuber Correction Calculator
+                </h5>
             </div>
             <div class="card-body">
                 <!-- Material Selection Tabs -->
@@ -230,10 +243,13 @@
         </div>
     </div>
 
-    <div class="col-md-6">
-        <div id="results" class="card" style="display: none;">
+    <div class="col-lg-6">
+        <div id="results" class="card h-100" style="display: none;">
             <div class="card-header">
-                <h5 class="card-title mb-0">Results</h5>
+                <h5 class="card-title mb-0 d-flex align-items-center">
+                    <i class="bi bi-graph-up me-2 text-success"></i>
+                    Analysis Results
+                </h5>
             </div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-3">
@@ -866,6 +882,24 @@ ${manualMaterials.map(material => `  - id: ${material.name}
             }
         });
 
+        // Handle theory section collapse toggle with smooth animation
+        const theorySection = document.getElementById('theorySection');
+        const theoryChevron = document.getElementById('theoryChevron');
+
+        if (theorySection && theoryChevron) {
+            theorySection.addEventListener('show.bs.collapse', function () {
+                theoryChevron.classList.add('rotated');
+                theoryChevron.classList.remove('bi-chevron-down');
+                theoryChevron.classList.add('bi-chevron-up');
+            });
+
+            theorySection.addEventListener('hide.bs.collapse', function () {
+                theoryChevron.classList.remove('rotated');
+                theoryChevron.classList.remove('bi-chevron-up');
+                theoryChevron.classList.add('bi-chevron-down');
+            });
+        }
+
         function populatePlotSelector(stressValues) {
             plotStressSelect.innerHTML = '<option value="">Choose stress value...</option>';
             stressValues.forEach((stress, index) => {
@@ -913,4 +947,407 @@ ${manualMaterials.map(material => `  - id: ${material.name}
         }
     });
 </script>
+
+<!-- Theory Section Footer -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card theory-card border-0 shadow-sm">
+            <div class="card-header theory-header">
+                <button
+                    class="btn btn-link text-white text-decoration-none p-0 w-100 d-flex align-items-center justify-content-between"
+                    type="button" data-bs-toggle="collapse" data-bs-target="#theorySection" aria-expanded="false"
+                    aria-controls="theorySection">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-book me-3 theory-icon"></i>
+                        <span class="theory-title">Neuber Correction Theory & Mathematical Foundation</span>
+                    </div>
+                    <div class="theory-chevron-container">
+                        <i class="bi bi-chevron-down theory-chevron" id="theoryChevron"></i>
+                    </div>
+                </button>
+            </div>
+            <div class="collapse" id="theorySection">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="theory-section-header">
+                                <h6 class="text-primary mb-3"><i class="bi bi-calculator me-2"></i>Mathematical
+                                    Foundation</h6>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6 class="text-dark">1. Neuber's Rule</h6>
+                                <p class="text-muted">The product of stress and strain remains constant:</p>
+                                <div class="equation-box bg-white p-3 rounded border">
+                                    <div class="text-center">
+                                        $$\sigma \cdot \varepsilon = \frac{\sigma_e^2}{E}$$
+                                    </div>
+                                </div>
+                                <small class="text-muted">Where $\sigma$ = actual stress, $\varepsilon$ = actual strain,
+                                    $\sigma_e$ = elastic
+                                    stress, $E$ = Young's modulus</small>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6 class="text-dark">2. Ramberg-Osgood Material Model</h6>
+                                <p class="text-muted">Material stress-strain behavior:</p>
+                                <div class="equation-box bg-white p-3 rounded border">
+                                    <div class="text-center">
+                                        $$\varepsilon = \varepsilon_e + \varepsilon_p = \frac{\sigma}{E} + \varepsilon_0
+                                        \left(\frac{\sigma}{\sigma_y}\right)^n$$
+                                    </div>
+                                </div>
+                                <small class="text-muted">Where $\varepsilon_e$ = elastic strain, $\varepsilon_p$ =
+                                    plastic strain, $\varepsilon_0$ = yield
+                                    offset (0.002), $\sigma_y$ = yield strength, $n$ = hardening exponent</small>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6 class="text-dark">3. Hardening Exponent</h6>
+                                <p class="text-muted">Calculated from material properties:</p>
+                                <div class="equation-box bg-white p-3 rounded border">
+                                    <div class="text-center">
+                                        $$n = \frac{\ln(\varepsilon_p^u) - \ln(\varepsilon_0)}{\ln(\sigma_u/\sigma_y)}$$
+                                    </div>
+                                </div>
+                                <small class="text-muted">Where $\varepsilon_p^u = \varepsilon_u - \sigma_u/E$ = plastic
+                                    strain at ultimate strength, $\sigma_u$ = ultimate
+                                    tensile strength</small>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="theory-section-header">
+                                <h6 class="text-primary mb-3"><i class="bi bi-gear me-2"></i>Key Assumptions &
+                                    Limitations</h6>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6 class="text-success">✓ When to Apply</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="bi bi-check-circle text-success me-2"></i>Elastic stresses exceed
+                                        yield strength</li>
+                                    <li><i class="bi bi-check-circle text-success me-2"></i>Fatigue analysis requiring
+                                        accurate predictions</li>
+                                    <li><i class="bi bi-check-circle text-success me-2"></i>Materials with plastic
+                                        deformation</li>
+                                    <li><i class="bi bi-check-circle text-success me-2"></i>FEA result correction</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6 class="text-warning">⚠ Limitations</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="bi bi-exclamation-triangle text-warning me-2"></i>Monotonic loading
+                                        only (no cyclic)</li>
+                                    <li><i class="bi bi-exclamation-triangle text-warning me-2"></i>Proportional loading
+                                        assumption</li>
+                                    <li><i class="bi bi-exclamation-triangle text-warning me-2"></i>Requires accurate
+                                        material properties</li>
+                                    <li><i class="bi bi-exclamation-triangle text-warning me-2"></i>May overcorrect
+                                        below yield</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6 class="text-info">ℹ Physical Interpretation</h6>
+                                <ol class="small">
+                                    <li><strong>Elastic Analysis:</strong> Linear behavior assumption, overestimates
+                                        stress</li>
+                                    <li><strong>Plastic Correction:</strong> Accounts for yielding, reduces stress</li>
+                                    <li><strong>Intersection Point:</strong> Where Neuber's rule and material behavior
+                                        meet</li>
+                                    <li><strong>Numerical Stability:</strong> Continuous solution across all stress
+                                        ranges</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3"><i class="bi bi-list-ul me-2"></i>Symbols and Definitions</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped">
+                                            <thead class="table-primary">
+                                                <tr>
+                                                    <th>Symbol</th>
+                                                    <th>Definition</th>
+                                                    <th>Units</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><strong>σ</strong></td>
+                                                    <td>Actual (corrected) stress</td>
+                                                    <td>MPa</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>ε</strong></td>
+                                                    <td>Actual strain</td>
+                                                    <td>-</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>σₑ</strong></td>
+                                                    <td>Elastic stress from linear analysis</td>
+                                                    <td>MPa</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>E</strong></td>
+                                                    <td>Young's modulus</td>
+                                                    <td>MPa</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>σᵧ</strong></td>
+                                                    <td>Yield strength</td>
+                                                    <td>MPa</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped">
+                                            <thead class="table-primary">
+                                                <tr>
+                                                    <th>Symbol</th>
+                                                    <th>Definition</th>
+                                                    <th>Units</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><strong>σᵤ</strong></td>
+                                                    <td>Ultimate tensile strength</td>
+                                                    <td>MPa</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>εᵤ</strong></td>
+                                                    <td>Fracture strain</td>
+                                                    <td>-</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>ε₀</strong></td>
+                                                    <td>Yield offset strain</td>
+                                                    <td>-</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>n</strong></td>
+                                                    <td>Ramberg-Osgood hardening exponent</td>
+                                                    <td>-</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>εₚᵘ</strong></td>
+                                                    <td>Plastic strain at ultimate strength</td>
+                                                    <td>-</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Implementation Note</h6>
+                                <p class="mb-0">This calculator uses a continuous solution approach that may result in
+                                    corrected stresses below the yield strength when the elastic stress is around or
+                                    below yield. This is intentional for numerical stability and ensures smooth behavior
+                                    across all stress ranges, making it suitable for analyzing FEA results that span
+                                    both elastic and plastic regions.</p>
+                            </div>
+
+                            <div class="text-center mt-3">
+                                <small class="text-muted">
+                                    For detailed theory and examples, visit:
+                                    <a href="https://manuel1618.github.io/neuber-correction/theory/" target="_blank"
+                                        class="text-decoration-none">
+                                        <i class="bi bi-external-link me-1"></i>Official Documentation
+                                    </a>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Clean, Professional Design System */
+    .theory-card {
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+    }
+
+    .theory-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .theory-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border: none;
+        padding: 1.5rem 2rem;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .theory-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: white;
+    }
+
+    .theory-icon {
+        font-size: 1.3rem;
+        color: white;
+    }
+
+    .theory-chevron-container {
+        width: 36px;
+        height: 36px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .theory-chevron-container:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: scale(1.05);
+    }
+
+    .theory-chevron {
+        font-size: 1.1rem;
+        color: white;
+        transition: transform 0.3s ease;
+    }
+
+    .theory-chevron.rotated {
+        transform: rotate(180deg);
+    }
+
+    .theory-section-header {
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .equation-box {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-left: 4px solid var(--primary-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+    }
+
+    .equation-box:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+    }
+
+    .table th {
+        background: var(--light-bg);
+        border: none;
+        font-weight: 600;
+        color: var(--text-primary);
+        padding: 1rem 0.75rem;
+    }
+
+    .table td {
+        border-color: var(--border-color);
+        padding: 0.75rem;
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(37, 99, 235, 0.02);
+    }
+
+    .table tbody tr:hover {
+        background-color: rgba(37, 99, 235, 0.05);
+    }
+
+    .MathJax {
+        font-size: 1.1em !important;
+    }
+
+    .equation-box .MathJax {
+        font-size: 1.2em !important;
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border: 1px solid #93c5fd;
+        border-left: 4px solid var(--info-color);
+        color: var(--text-primary);
+    }
+
+    .list-unstyled li {
+        padding: 0.5rem 0;
+        transition: all 0.2s ease;
+        border-radius: 6px;
+    }
+
+    .list-unstyled li:hover {
+        background-color: rgba(37, 99, 235, 0.05);
+        padding-left: 0.5rem;
+    }
+
+    .text-success {
+        color: var(--success-color) !important;
+        font-weight: 600;
+    }
+
+    .text-warning {
+        color: var(--warning-color) !important;
+        font-weight: 600;
+    }
+
+    .text-info {
+        color: var(--info-color) !important;
+        font-weight: 600;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .theory-header {
+            padding: 1.25rem 1.5rem;
+        }
+
+        .theory-title {
+            font-size: 1.1rem;
+        }
+
+        .equation-box {
+            padding: 1rem;
+        }
+
+        .theory-chevron-container {
+            width: 32px;
+            height: 32px;
+        }
+    }
+
+    .collapse {
+        transition: height 0.3s ease;
+    }
+
+    .collapsing {
+        transition: height 0.3s ease;
+    }
+</style>
 {% endblock %}
