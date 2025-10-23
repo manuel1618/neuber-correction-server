@@ -624,15 +624,15 @@ wheels = [
 
 [[package]]
 name = "neuber-correction"
-version = "0.1.7a0"
+version = "0.1.8a0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/27/8c/3aab1ff22db32030b171be3f1b1ff7c8622dee19e59897c68802f5df9a90/neuber_correction-0.1.7a0.tar.gz", hash = "sha256:720e95a40cbade5de1a9db3a652d694375900b59c7b2c19e9dfa0ec47c915975", size = 19867, upload-time = "2025-10-23T16:25:05.663Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c6/04/0e71a6c2667d6594f0945f332d0d5626682a1c10a64a87f874067d3856ae/neuber_correction-0.1.8a0.tar.gz", hash = "sha256:611cf3a593346e1140370d64a0a1dc348c1d1b855511bda496a7bea2a389dace", size = 19871, upload-time = "2025-10-23T17:13:04.947Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/80/d5/7f8a2a38eeb215567686397a51c81cc4de629adcef4eabc0b945fc008580/neuber_correction-0.1.7a0-py3-none-any.whl", hash = "sha256:62c75194c2b2e6ba4c389c833f4b29aa4b7a2e642ba955e035736f657b16ae6f", size = 20113, upload-time = "2025-10-23T16:25:04.759Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/ee/0560c2433ef312e619e17faa189c41f3f8db5a77d5e2b1763e3ac45f5a71/neuber_correction-0.1.8a0-py3-none-any.whl", hash = "sha256:ff69e5486116c6cf875eaeded5a03538cc3ad4cd39766b259586151cd3e3ae68", size = 20114, upload-time = "2025-10-23T17:13:03.104Z" },
 ]
 
 [[package]]
