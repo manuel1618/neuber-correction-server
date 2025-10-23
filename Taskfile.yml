@@ -6,7 +6,7 @@ vars:
   APP_NAME: "neuber-correction-server"
   APP_PATH: "app"
   MAIN_FILE: "{{.APP_PATH}}.main"
-  PORT: "8000"
+  PORT: "1234"
   HOST: "0.0.0.0"
 
 tasks:
