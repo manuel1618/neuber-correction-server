@@ -77,10 +77,14 @@ class ManualMaterialRequest(BaseModel):
     sigma_u: float = Field(..., gt=0, description="Ultimate tensile strength")
     elastic_mod: float = Field(..., gt=0, description="Elastic modulus")
     eps_u: float = Field(..., gt=0, description="Ultimate strain")
-    ramberg_osgood_n: Optional[float] = Field(None, gt=0, description="Ramberg-Osgood hardening exponent")
+    ramberg_osgood_n: Optional[float] = Field(
+        None, gt=0, description="Ramberg-Osgood hardening exponent"
+    )
     description: Optional[str] = None
 
-    @field_validator("yield_strength", "sigma_u", "elastic_mod", "eps_u", "ramberg_osgood_n")
+    @field_validator(
+        "yield_strength", "sigma_u", "elastic_mod", "eps_u", "ramberg_osgood_n"
+    )
     @classmethod
     def validate_positive_values(cls, v):
         """Validate that all material properties are positive"""
@@ -121,7 +125,12 @@ def load_materials():
                                 "sigma_u": material["properties"].get("ftu", 0),
                                 "elastic_mod": material["properties"].get("E", 0),
                                 "eps_u": material["properties"].get("epsilon_u", 0),
-                                "ramberg_osgood_n": material["properties"].get("ramberg_osgood_n") or material["properties"].get("ramber_osgood_n"),  # Handle typo in YAML
+                                "ramberg_osgood_n": material["properties"].get(
+                                    "ramberg_osgood_n"
+                                )
+                                or material["properties"].get(
+                                    "ramber_osgood_n"
+                                ),  # Handle typo in YAML
                                 "description": material.get("name", material["id"]),
                             }
                             valid_materials += 1
@@ -153,7 +162,12 @@ def load_materials():
                                 "sigma_u": material["properties"].get("ftu", 0),
                                 "elastic_mod": material["properties"].get("E", 0),
                                 "eps_u": material["properties"].get("epsilon_u", 0),
-                                "ramberg_osgood_n": material["properties"].get("ramberg_osgood_n") or material["properties"].get("ramber_osgood_n"),  # Handle typo in YAML
+                                "ramberg_osgood_n": material["properties"].get(
+                                    "ramberg_osgood_n"
+                                )
+                                or material["properties"].get(
+                                    "ramber_osgood_n"
+                                ),  # Handle typo in YAML
                                 "description": material.get("name", material["id"]),
                             }
                     return {"materials": materials_dict}

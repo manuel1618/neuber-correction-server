@@ -84,7 +84,7 @@ def mk_material_routes(
                         "sigma_u": props["ftu"],
                         "elastic_mod": props["E"],
                         "eps_u": props["epsilon_u"],
-                        "ramberg_osgood_n": props.get("ramberg_osgood_n") or props.get("ramber_osgood_n"),  # Handle typo
+                        "ramberg_osgood_n": props.get("ramberg_osgood_n"),
                         "description": material.get("name", material["id"]),
                     }
 
@@ -196,11 +196,11 @@ def mk_material_routes(
                 "description": material_request.description
                 or f"Manual material: {material_request.name}",
             }
-            
+
             # Add hardening exponent if provided
             if material_request.ramberg_osgood_n is not None:
                 material_data["ramberg_osgood_n"] = material_request.ramberg_osgood_n
-            
+
             user_materials[material_request.name] = material_data
 
             # Save updated materials

@@ -68,11 +68,16 @@ def mk_neuber_routes(app: FastAPI):
                 "elastic_mod": material_props["elastic_mod"],
                 "eps_u": material_props["eps_u"],
             }
-            
+
             # Add hardening exponent if available
-            if "ramberg_osgood_n" in material_props and material_props["ramberg_osgood_n"] is not None:
-                material_kwargs["hardening_exponent"] = material_props["ramberg_osgood_n"]
-            
+            if (
+                "ramberg_osgood_n" in material_props
+                and material_props["ramberg_osgood_n"] is not None
+            ):
+                material_kwargs["hardening_exponent"] = material_props[
+                    "ramberg_osgood_n"
+                ]
+
             material = MaterialForNeuberCorrection(**material_kwargs)
 
             neuber_settings = NeuberSolverSettings(
@@ -195,11 +200,16 @@ def mk_neuber_routes(app: FastAPI):
                 "elastic_mod": material_props["elastic_mod"],
                 "eps_u": material_props["eps_u"],
             }
-            
+
             # Add hardening exponent if available
-            if "ramberg_osgood_n" in material_props and material_props["ramberg_osgood_n"] is not None:
-                material_kwargs["hardening_exponent"] = material_props["ramberg_osgood_n"]
-            
+            if (
+                "ramberg_osgood_n" in material_props
+                and material_props["ramberg_osgood_n"] is not None
+            ):
+                material_kwargs["hardening_exponent"] = material_props[
+                    "ramberg_osgood_n"
+                ]
+
             material = MaterialForNeuberCorrection(**material_kwargs)
 
             neuber_settings = NeuberSolverSettings(
