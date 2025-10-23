@@ -61,12 +61,19 @@ def mk_neuber_routes(app: FastAPI):
                     raise HTTPException(status_code=404, detail="Material not found")
                 material_props = all_materials[correction_request.material_name]
 
-            material = MaterialForNeuberCorrection(
-                yield_strength=material_props["yield_strength"],
-                sigma_u=material_props["sigma_u"],
-                elastic_mod=material_props["elastic_mod"],
-                eps_u=material_props["eps_u"],
-            )
+            # Create material with optional hardening exponent
+            material_kwargs = {
+                "yield_strength": material_props["yield_strength"],
+                "sigma_u": material_props["sigma_u"],
+                "elastic_mod": material_props["elastic_mod"],
+                "eps_u": material_props["eps_u"],
+            }
+            
+            # Add hardening exponent if available
+            if "ramberg_osgood_n" in material_props and material_props["ramberg_osgood_n"] is not None:
+                material_kwargs["hardening_exponent"] = material_props["ramberg_osgood_n"]
+            
+            material = MaterialForNeuberCorrection(**material_kwargs)
 
             neuber_settings = NeuberSolverSettings(
                 tolerance=1e-6,
@@ -181,12 +188,19 @@ def mk_neuber_routes(app: FastAPI):
                     detail=f"Material missing required properties: {missing_props}",
                 )
 
-            material = MaterialForNeuberCorrection(
-                yield_strength=material_props["yield_strength"],
-                sigma_u=material_props["sigma_u"],
-                elastic_mod=material_props["elastic_mod"],
-                eps_u=material_props["eps_u"],
-            )
+            # Create material with optional hardening exponent
+            material_kwargs = {
+                "yield_strength": material_props["yield_strength"],
+                "sigma_u": material_props["sigma_u"],
+                "elastic_mod": material_props["elastic_mod"],
+                "eps_u": material_props["eps_u"],
+            }
+            
+            # Add hardening exponent if available
+            if "ramberg_osgood_n" in material_props and material_props["ramberg_osgood_n"] is not None:
+                material_kwargs["hardening_exponent"] = material_props["ramberg_osgood_n"]
+            
+            material = MaterialForNeuberCorrection(**material_kwargs)
 
             neuber_settings = NeuberSolverSettings(
                 tolerance=1e-6,

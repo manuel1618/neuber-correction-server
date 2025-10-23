@@ -12,6 +12,7 @@ materials:
       ftu: 485 # Ultimate tensile strength (MPa)
       E: 72400 # Young's modulus (MPa)
       epsilon_u: 0.18 # Fracture strain
+      ramberg_osgood_n: 18 # Hardening exponent
 
   - id: STEEL_S355
     name: "S355 Structural Steel"

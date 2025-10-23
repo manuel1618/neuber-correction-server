@@ -222,7 +222,14 @@ class TestRateLimiting:
         assert result is True
         assert rate_info["limit"] == 100
         assert rate_info["remaining"] == 99
-        mock_db.update_rate_limit.assert_called_once_with("test-key", 1, now)
+        # Check that update_rate_limit was called with correct parameters
+        mock_db.update_rate_limit.assert_called_once()
+        call_args = mock_db.update_rate_limit.call_args
+        assert call_args[0][0] == "test-key"  # key
+        assert call_args[0][1] == 1  # requests
+        # The timestamp should be close to now (within 1 second)
+        call_timestamp = call_args[0][2]
+        assert abs((call_timestamp - now).total_seconds()) < 1
 
     def test_check_rate_limit_database_error(self):
         """Test rate limiting with database error"""

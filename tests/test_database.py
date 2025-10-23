@@ -264,7 +264,13 @@ class TestSQLiteDatabase:
         """Test handling of database connection errors"""
         # Test with invalid path - this should not raise an exception immediately
         # since connections are created lazily
-        db = SQLiteDatabase("/invalid/path/that/does/not/exist.db")
+        import os
+
+        # Use a path that exists but is not writable
+        invalid_path = (
+            "/dev/null/test.db" if os.path.exists("/dev/null") else "/tmp/test.db"
+        )
+        db = SQLiteDatabase(invalid_path)
         # The error will occur when we try to use the database
         with pytest.raises(Exception):
             db.create_tables()

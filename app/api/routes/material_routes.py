@@ -84,6 +84,7 @@ def mk_material_routes(
                         "sigma_u": props["ftu"],
                         "elastic_mod": props["E"],
                         "eps_u": props["epsilon_u"],
+                        "ramberg_osgood_n": props.get("ramberg_osgood_n") or props.get("ramber_osgood_n"),  # Handle typo
                         "description": material.get("name", material["id"]),
                     }
 
@@ -187,7 +188,7 @@ def mk_material_routes(
             user_materials = get_user_materials(session_id)
 
             # Add the material
-            user_materials[material_request.name] = {
+            material_data = {
                 "yield_strength": material_request.yield_strength,
                 "sigma_u": material_request.sigma_u,
                 "elastic_mod": material_request.elastic_mod,
@@ -195,6 +196,12 @@ def mk_material_routes(
                 "description": material_request.description
                 or f"Manual material: {material_request.name}",
             }
+            
+            # Add hardening exponent if provided
+            if material_request.ramberg_osgood_n is not None:
+                material_data["ramberg_osgood_n"] = material_request.ramberg_osgood_n
+            
+            user_materials[material_request.name] = material_data
 
             # Save updated materials
             save_user_materials(session_id, user_materials)

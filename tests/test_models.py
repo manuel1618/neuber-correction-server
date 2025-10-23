@@ -128,6 +128,47 @@ class TestPydanticModels:
         assert request.name == "test_steel"
         assert request.description is None
 
+    def test_manual_material_request_with_hardening_exponent(self):
+        """Test ManualMaterialRequest with hardening exponent"""
+        request = ManualMaterialRequest(
+            name="test_steel",
+            yield_strength=350.0,
+            sigma_u=500.0,
+            elastic_mod=210000.0,
+            eps_u=0.15,
+            ramberg_osgood_n=15.5,
+            description="Test steel with hardening exponent",
+        )
+
+        assert request.name == "test_steel"
+        assert request.ramberg_osgood_n == 15.5
+        assert request.description == "Test steel with hardening exponent"
+
+    def test_manual_material_request_optional_hardening_exponent(self):
+        """Test ManualMaterialRequest without hardening exponent"""
+        request = ManualMaterialRequest(
+            name="test_steel",
+            yield_strength=350.0,
+            sigma_u=500.0,
+            elastic_mod=210000.0,
+            eps_u=0.15,
+        )
+
+        assert request.name == "test_steel"
+        assert request.ramberg_osgood_n is None
+
+    def test_manual_material_request_invalid_hardening_exponent(self):
+        """Test ManualMaterialRequest with invalid hardening exponent"""
+        with pytest.raises(ValueError):
+            ManualMaterialRequest(
+                name="test_steel",
+                yield_strength=350.0,
+                sigma_u=500.0,
+                elastic_mod=210000.0,
+                eps_u=0.15,
+                ramberg_osgood_n=-5.0,  # Negative value
+            )
+
     def test_manual_material_request_invalid_values(self):
         """Test ManualMaterialRequest with invalid values"""
         with pytest.raises(ValueError):
@@ -188,6 +229,76 @@ class TestMaterialLoading:
                 materials_dict = materials["materials"]
                 assert "test_steel" in materials_dict
                 assert materials_dict["test_steel"]["yield_strength"] == 350
+        finally:
+            os.unlink(tmp_path)
+
+    def test_load_materials_with_hardening_exponent(self):
+        """Test loading materials with hardening exponent"""
+        test_materials = {
+            "materials": [
+                {
+                    "id": "test_steel_with_n",
+                    "name": "Test Steel with Hardening Exponent",
+                    "properties": {
+                        "fty": 350,
+                        "ftu": 500,
+                        "E": 210000,
+                        "epsilon_u": 0.15,
+                        "ramberg_osgood_n": 18.5,
+                    },
+                }
+            ]
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as tmp:
+            yaml.dump(test_materials, tmp)
+            tmp_path = tmp.name
+
+        try:
+            with patch("app.models.models.MATERIALS_FILE", tmp_path):
+                materials = load_materials()
+
+                assert "materials" in materials
+                materials_dict = materials["materials"]
+                assert "test_steel_with_n" in materials_dict
+                material_props = materials_dict["test_steel_with_n"]
+                assert material_props["yield_strength"] == 350
+                assert material_props["ramberg_osgood_n"] == 18.5
+        finally:
+            os.unlink(tmp_path)
+
+    def test_load_materials_with_typo_hardening_exponent(self):
+        """Test loading materials with typo in hardening exponent field name"""
+        test_materials = {
+            "materials": [
+                {
+                    "id": "test_steel_typo",
+                    "name": "Test Steel with Typo",
+                    "properties": {
+                        "fty": 350,
+                        "ftu": 500,
+                        "E": 210000,
+                        "epsilon_u": 0.15,
+                        "ramber_osgood_n": 20.0,  # Note the typo
+                    },
+                }
+            ]
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as tmp:
+            yaml.dump(test_materials, tmp)
+            tmp_path = tmp.name
+
+        try:
+            with patch("app.models.models.MATERIALS_FILE", tmp_path):
+                materials = load_materials()
+
+                assert "materials" in materials
+                materials_dict = materials["materials"]
+                assert "test_steel_typo" in materials_dict
+                material_props = materials_dict["test_steel_typo"]
+                assert material_props["yield_strength"] == 350
+                assert material_props["ramberg_osgood_n"] == 20.0  # Should handle typo
         finally:
             os.unlink(tmp_path)
 

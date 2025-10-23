@@ -127,10 +127,23 @@
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="manualDescription" class="form-label">Description (Optional)</label>
-                                <input type="text" class="form-control" id="manualDescription"
-                                    placeholder="Brief description of the material">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="rambergOsgoodN" class="form-label">Hardening Exponent (n)</label>
+                                        <input type="number" class="form-control" id="rambergOsgoodN" step="0.1"
+                                            placeholder="Optional - will be calculated if not provided">
+                                        <div class="form-text">Ramberg-Osgood hardening exponent. Leave empty to
+                                            calculate automatically.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="manualDescription" class="form-label">Description (Optional)</label>
+                                        <input type="text" class="form-control" id="manualDescription"
+                                            placeholder="Brief description of the material">
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="mb-3">
@@ -171,6 +184,7 @@
                                             <th>Ultimate (MPa)</th>
                                             <th>E (MPa)</th>
                                             <th>εu</th>
+                                            <th>n</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
@@ -523,6 +537,7 @@
             const sigmaU = parseFloat(document.getElementById('sigmaU').value);
             const elasticMod = parseFloat(document.getElementById('elasticMod').value);
             const epsU = parseFloat(document.getElementById('epsU').value);
+            const rambergOsgoodN = document.getElementById('rambergOsgoodN').value;
             const description = document.getElementById('manualDescription').value;
             const stressValues = document.getElementById('manualStressValues').value
                 .split(',')
@@ -541,18 +556,26 @@
             }
 
             try {
+                // Prepare material data
+                const materialData = {
+                    name: materialName,
+                    yield_strength: yieldStrength,
+                    sigma_u: sigmaU,
+                    elastic_mod: elasticMod,
+                    eps_u: epsU,
+                    description: description
+                };
+
+                // Add hardening exponent if provided
+                if (rambergOsgoodN && !isNaN(parseFloat(rambergOsgoodN))) {
+                    materialData.ramberg_osgood_n = parseFloat(rambergOsgoodN);
+                }
+
                 // Add the material first
                 const addResponse = await fetch('/api/manual-material', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: materialName,
-                        yield_strength: yieldStrength,
-                        sigma_u: sigmaU,
-                        elastic_mod: elasticMod,
-                        eps_u: epsU,
-                        description: description
-                    })
+                    body: JSON.stringify(materialData)
                 });
 
                 if (!addResponse.ok) {
@@ -561,7 +584,8 @@
                 }
 
                 // Add to local materials list
-                addMaterialToLocalList(materialName, yieldStrength, sigmaU, elasticMod, epsU, description);
+                const hardeningExp = rambergOsgoodN && !isNaN(parseFloat(rambergOsgoodN)) ? parseFloat(rambergOsgoodN) : null;
+                addMaterialToLocalList(materialName, yieldStrength, sigmaU, elasticMod, epsU, description, hardeningExp);
 
                 // Now calculate with the custom material
                 const customMaterial = {
@@ -584,6 +608,7 @@
             const sigmaU = parseFloat(document.getElementById('sigmaU').value);
             const elasticMod = parseFloat(document.getElementById('elasticMod').value);
             const epsU = parseFloat(document.getElementById('epsU').value);
+            const rambergOsgoodN = document.getElementById('rambergOsgoodN').value;
             const description = document.getElementById('manualDescription').value;
             const customTitle = manualCustomTitleInput ? manualCustomTitleInput.value.trim() : '';
 
@@ -593,6 +618,21 @@
             }
 
             try {
+                // Prepare material data
+                const materialData = {
+                    name: materialName,
+                    yield_strength: yieldStrength,
+                    sigma_u: sigmaU,
+                    elastic_mod: elasticMod,
+                    eps_u: epsU,
+                    description: description
+                };
+
+                // Add hardening exponent if provided
+                if (rambergOsgoodN && !isNaN(parseFloat(rambergOsgoodN))) {
+                    materialData.ramberg_osgood_n = parseFloat(rambergOsgoodN);
+                }
+
                 // Add the material to backend
                 const addResponse = await fetch('/api/manual-material', {
                     method: 'POST',
@@ -600,14 +640,7 @@
                         'Content-Type': 'application/json',
                         ...(customTitle ? { 'X-Custom-Title': customTitle } : {})
                     },
-                    body: JSON.stringify({
-                        name: materialName,
-                        yield_strength: yieldStrength,
-                        sigma_u: sigmaU,
-                        elastic_mod: elasticMod,
-                        eps_u: epsU,
-                        description: description
-                    })
+                    body: JSON.stringify(materialData)
                 });
 
                 if (!addResponse.ok) {
@@ -616,7 +649,8 @@
                 }
 
                 // Add to local materials list
-                addMaterialToLocalList(materialName, yieldStrength, sigmaU, elasticMod, epsU, description);
+                const hardeningExp = rambergOsgoodN && !isNaN(parseFloat(rambergOsgoodN)) ? parseFloat(rambergOsgoodN) : null;
+                addMaterialToLocalList(materialName, yieldStrength, sigmaU, elasticMod, epsU, description, hardeningExp);
 
                 // Clear form
                 clearManualForm();
@@ -626,31 +660,29 @@
             }
         }
 
-        function addMaterialToLocalList(name, yieldStrength, sigmaU, elasticMod, epsU, description) {
+        function addMaterialToLocalList(name, yieldStrength, sigmaU, elasticMod, epsU, description, rambergOsgoodN = null) {
             // Check if material already exists
             const existingIndex = manualMaterials.findIndex(m => m.name === name);
+            const materialData = {
+                name: name,
+                description: description || `Manual material: ${name}`,
+                properties: {
+                    fty: yieldStrength,
+                    ftu: sigmaU,
+                    E: elasticMod,
+                    epsilon_u: epsU
+                }
+            };
+
+            // Add hardening exponent if provided
+            if (rambergOsgoodN !== null) {
+                materialData.properties.ramberg_osgood_n = rambergOsgoodN;
+            }
+
             if (existingIndex !== -1) {
-                manualMaterials[existingIndex] = {
-                    name: name,
-                    description: description || `Manual material: ${name}`,
-                    properties: {
-                        fty: yieldStrength,
-                        ftu: sigmaU,
-                        E: elasticMod,
-                        epsilon_u: epsU
-                    }
-                };
+                manualMaterials[existingIndex] = materialData;
             } else {
-                manualMaterials.push({
-                    name: name,
-                    description: description || `Manual material: ${name}`,
-                    properties: {
-                        fty: yieldStrength,
-                        ftu: sigmaU,
-                        E: elasticMod,
-                        epsilon_u: epsU
-                    }
-                });
+                manualMaterials.push(materialData);
             }
 
             updateMaterialsTable();
@@ -668,6 +700,8 @@
 
             manualMaterials.forEach((material, index) => {
                 const row = document.createElement('tr');
+                const hardeningExp = material.properties.ramberg_osgood_n ?
+                    material.properties.ramberg_osgood_n.toFixed(1) : 'Auto';
                 row.innerHTML = `
                     <td>${material.name}</td>
                     <td>${material.description}</td>
@@ -675,6 +709,7 @@
                     <td>${material.properties.ftu}</td>
                     <td>${material.properties.E}</td>
                     <td>${material.properties.epsilon_u}</td>
+                    <td>${hardeningExp}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary" onclick="calculateWithMaterial(${index})">Calculate</button>
                         <button class="btn btn-sm btn-outline-danger" onclick="removeMaterial(${index})">Remove</button>
@@ -695,6 +730,7 @@
             document.getElementById('sigmaU').value = '';
             document.getElementById('elasticMod').value = '';
             document.getElementById('epsU').value = '';
+            document.getElementById('rambergOsgoodN').value = '';
             document.getElementById('manualDescription').value = '';
             document.getElementById('manualStressValues').value = '';
         }
