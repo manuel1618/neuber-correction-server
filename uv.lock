@@ -8,11 +8,11 @@ resolution-markers = [
 
 [[package]]
 name = "annotated-doc"
-version = "0.0.2"
+version = "0.0.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c4/92/2974dba489541ed4af531d00a4df075bc3a455557d3b54fd6932c51c95cc/annotated_doc-0.0.2.tar.gz", hash = "sha256:f25664061aee278227abfaec5aeb398298be579b934758c16205d48e896e149c", size = 4452, upload-time = "2025-10-22T18:38:52.597Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d7/a6/dc46877b911e40c00d395771ea710d5e77b6de7bacd5fdcd78d70cc5a48f/annotated_doc-0.0.3.tar.gz", hash = "sha256:e18370014c70187422c33e945053ff4c286f453a984eba84d0dbfa0c935adeda", size = 5535, upload-time = "2025-10-24T14:57:10.718Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/ee/cc5109cdd46a6ccd3d923db3c5425383abe51b5c033647aad1b5e2452e82/annotated_doc-0.0.2-py3-none-any.whl", hash = "sha256:2188cb99e353fcb5c20f23b8bc6f5fa7c924b213fac733d4b44883f9edffa090", size = 4056, upload-time = "2025-10-22T18:38:51.24Z" },
+    { url = "https://files.pythonhosted.org/packages/02/b7/cf592cb5de5cb3bade3357f8d2cf42bf103bbe39f459824b4939fd212911/annotated_doc-0.0.3-py3-none-any.whl", hash = "sha256:348ec6664a76f1fd3be81f43dffbee4c7e8ce931ba71ec67cc7f4ade7fbbb580", size = 5488, upload-time = "2025-10-24T14:57:09.462Z" },
 ]
 
 [[package]]
@@ -634,15 +634,15 @@ wheels = [
 
 [[package]]
 name = "neuber-correction"
-version = "0.1.9a0"
+version = "0.1.11a0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ef/d0/123664aa53cfd98a83a6f2b9821044466163a98e0e9176260fa3fe18f4f1/neuber_correction-0.1.9a0.tar.gz", hash = "sha256:f8e4d6541b497515a3b625c4ef182bee8cde65a14b48cf067d936dc559fa8ea3", size = 20145, upload-time = "2025-10-24T06:13:38.312Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ba/dc/b38fba9edf4c381563b5052fc14c9473164c9713b31c44506105be8cde30/neuber_correction-0.1.11a0.tar.gz", hash = "sha256:bfd1cbe6ca2baca7d772f8f58a1234e935d713ed1d818c825f7d7164a73b2bcf", size = 20381, upload-time = "2025-10-24T09:21:50.902Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/51/bdce7b16cc28144c67a4e740906904d0303166de5d36f19cc973262402b1/neuber_correction-0.1.9a0-py3-none-any.whl", hash = "sha256:b79a26fd68837f82ea5b6ceddcb09873b10d43f641f32adfa309c89dba4f1379", size = 20324, upload-time = "2025-10-24T06:13:37.267Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/d0/0b977daa2c959a4725b50e54977d751a8ab1d0d751bc79d277a313116c2e/neuber_correction-0.1.11a0-py3-none-any.whl", hash = "sha256:fa23566eeeb90de1ada2401b80f9700c9685cd44bd9fecb1d7a19f575d77e401", size = 20569, upload-time = "2025-10-24T09:21:49.09Z" },
 ]
 
 [[package]]
@@ -677,7 +677,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.116.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "matplotlib", specifier = ">=3.10.0" },
-    { name = "neuber-correction", specifier = ">=0.1.3a1" },
+    { name = "neuber-correction", specifier = ">=0.1.9a0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "python-multipart", specifier = ">=0.0.20" },
     { name = "pyyaml", specifier = ">=6.0.2" },
