@@ -142,7 +142,6 @@ def mk_neuber_routes(app: FastAPI):
         stress_value: float = Form(...),
         custom_material: Optional[str] = Form(None),
         custom_title: Optional[str] = Form(None),
-        verbose_hardening_exponent: bool = Form(False),
     ):
         """Generate and return Neuber diagram plot"""
         start_time = time.time()
@@ -231,7 +230,6 @@ def mk_neuber_routes(app: FastAPI):
                 show_plot=False,
                 plot_file="neuber_diagram.png",
                 plot_pretty_name=custom_title or f"{material_name} Neuber Diagram",
-                verbose_hardening_exponent=verbose_hardening_exponent,
             )
 
             # Convert plot to base64 string
