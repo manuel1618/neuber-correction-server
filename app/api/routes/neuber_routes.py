@@ -51,6 +51,7 @@ def mk_neuber_routes(app: FastAPI):
             # Check if using custom material
             if correction_request.custom_material:
                 material_props = correction_request.custom_material
+                material_name_for_init = "custom_material"
             else:
                 # Get user materials
                 user_materials = get_user_materials(session_id)
@@ -60,9 +61,11 @@ def mk_neuber_routes(app: FastAPI):
                 if correction_request.material_name not in all_materials:
                     raise HTTPException(status_code=404, detail="Material not found")
                 material_props = all_materials[correction_request.material_name]
+                material_name_for_init = correction_request.material_name
 
             # Create material with optional hardening exponent
             material_kwargs = {
+                "name": material_name_for_init,
                 "yield_strength": material_props["yield_strength"],
                 "sigma_u": material_props["sigma_u"],
                 "elastic_mod": material_props["elastic_mod"],
@@ -196,6 +199,7 @@ def mk_neuber_routes(app: FastAPI):
 
             # Create material with optional hardening exponent
             material_kwargs = {
+                "name": material_name,
                 "yield_strength": material_props["yield_strength"],
                 "sigma_u": material_props["sigma_u"],
                 "elastic_mod": material_props["elastic_mod"],
@@ -260,6 +264,179 @@ def mk_neuber_routes(app: FastAPI):
                 request.app.state.db,
                 session_id,
                 "/api/plot",
+                duration_ms,
+                False,
+                ip_address,
+                str(e),
+            )
+            raise HTTPException(
+                status_code=500, detail=f"Plot generation error: {str(e)}"
+            ) from e
+
+    @app.post("/api/plot-limit-ultimate")
+    async def generate_plot_limit_ultimate(
+        request: Request,
+        material_name: str = Form(...),
+        stress_value: float = Form(...),
+        part_name: str = Form(...),
+        location: str = Form(...),
+        lc: str = Form(...),
+        ultimate_factor: float = Form(1.5),
+    ):
+        """Generate and return Neuber limit ultimate plot"""
+        start_time = time.time()
+        session_id = request.state.session_id
+        ip_address = request.state.ip_address
+
+        # Rate limiting: simplified generous limits
+        if not check_rate_limit(request.app.state.db, f"plot:{session_id}"):
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded. Please try again later.",
+            )
+
+        try:
+            materials = load_materials()
+
+            # Get user materials
+            user_materials = get_user_materials(session_id)
+            all_materials = materials["materials"].copy()
+            all_materials.update(user_materials)
+
+            # Check if material exists in materials dictionary
+            if material_name not in all_materials:
+                raise HTTPException(
+                    status_code=404, detail=f"Material '{material_name}' not found"
+                )
+            material_props = all_materials[material_name]
+
+            # Validate material properties
+            if not material_props:
+                raise HTTPException(
+                    status_code=400, detail="Invalid material properties"
+                )
+
+            required_props = ["yield_strength", "sigma_u", "elastic_mod", "eps_u"]
+            missing_props = [
+                prop for prop in required_props if prop not in material_props
+            ]
+            if missing_props:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Material missing required properties: {missing_props}",
+                )
+
+            # Create material with optional hardening exponent
+            material_kwargs = {
+                "name": material_name,
+                "yield_strength": material_props["yield_strength"],
+                "sigma_u": material_props["sigma_u"],
+                "elastic_mod": material_props["elastic_mod"],
+                "eps_u": material_props["eps_u"],
+            }
+
+            # Add hardening exponent if available
+            if (
+                "ramberg_osgood_n" in material_props
+                and material_props["ramberg_osgood_n"] is not None
+            ):
+                material_kwargs["hardening_exponent"] = material_props[
+                    "ramberg_osgood_n"
+                ]
+
+            material = MaterialForNeuberCorrection(**material_kwargs)
+
+            neuber_settings = NeuberSolverSettings(
+                tolerance=1e-6,
+                max_iterations=10000,
+                memoization_precision=1e-6,
+            )
+
+            neuber = NeuberCorrection(material=material, settings=neuber_settings)
+
+            # Use the stress value directly as the limit (not corrected)
+            stress_limit = stress_value
+
+            # Get ramberg_osgood_n_source (the source string, not the numeric value)
+            # This should be a string like "MMPDS" indicating where the hardening exponent came from
+            n_source = material_props.get("ramberg_osgood_n_source")
+            if n_source is None:
+                # Fallback: use the material name or a default
+                n_source = "N/A"
+
+            # Generate plot using plot_neuber_limit_ultimate
+            # Based on user's example, this is a module-level function
+            try:
+                # Try importing as module-level function
+                import neuber_correction
+
+                if hasattr(neuber_correction, "plot_neuber_limit_ultimate"):
+                    fig, _ = neuber_correction.plot_neuber_limit_ultimate(
+                        stress_limit=stress_limit,
+                        stress_ultimate=stress_limit * ultimate_factor,
+                        show_plot=False,
+                        plot_file="neuber_limit_ultimate.png",
+                        plot_pretty_name=f"Neuber Limit: {part_name}, location: {location}\n {lc}",
+                        n_source=n_source,
+                    )
+                elif hasattr(neuber, "plot_neuber_limit_ultimate"):
+                    # Try as method on NeuberCorrection class
+                    fig, _ = neuber.plot_neuber_limit_ultimate(
+                        stress_limit=stress_limit,
+                        stress_ultimate=stress_limit * ultimate_factor,
+                        show_plot=False,
+                        plot_file="neuber_limit_ultimate.png",
+                        plot_pretty_name=f"Neuber Limit: {part_name}, location: {location}\n {lc}",
+                        n_source=n_source,
+                    )
+                else:
+                    # Try direct import
+                    from neuber_correction import plot_neuber_limit_ultimate
+
+                    fig, _ = plot_neuber_limit_ultimate(
+                        stress_limit=stress_limit,
+                        stress_ultimate=stress_limit * ultimate_factor,
+                        show_plot=False,
+                        plot_file="neuber_limit_ultimate.png",
+                        plot_pretty_name=f"Neuber Limit: {part_name}, location: {location}\n {lc}",
+                        n_source=n_source,
+                    )
+            except (AttributeError, ImportError) as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"plot_neuber_limit_ultimate function not found in neuber_correction package: {str(e)}",
+                ) from e
+
+            # Convert plot to base64 string
+            img_buffer = io.BytesIO()
+            fig.savefig(img_buffer, format="png", dpi=300, bbox_inches="tight")
+            img_buffer.seek(0)
+            img_str = base64.b64encode(img_buffer.getvalue()).decode()
+
+            plt.close(fig)
+
+            # Update session activity
+            update_session_activity(request.app.state.db, session_id, ip_address)
+
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                "/api/plot-limit-ultimate",
+                duration_ms,
+                True,
+                ip_address,
+            )
+
+            return {"plot_data": f"data:image/png;base64,{img_str}"}
+        except HTTPException:
+            raise
+        except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            log_usage(
+                request.app.state.db,
+                session_id,
+                "/api/plot-limit-ultimate",
                 duration_ms,
                 False,
                 ip_address,

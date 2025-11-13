@@ -131,6 +131,9 @@ def load_materials():
                                 or material["properties"].get(
                                     "ramber_osgood_n"
                                 ),  # Handle typo in YAML
+                                "ramberg_osgood_n_source": material["properties"].get(
+                                    "ramberg_osgood_n_source"
+                                ),
                                 "description": material.get("name", material["id"]),
                             }
                             valid_materials += 1
@@ -168,6 +171,9 @@ def load_materials():
                                 or material["properties"].get(
                                     "ramber_osgood_n"
                                 ),  # Handle typo in YAML
+                                "ramberg_osgood_n_source": material["properties"].get(
+                                    "ramberg_osgood_n_source"
+                                ),
                                 "description": material.get("name", material["id"]),
                             }
                     return {"materials": materials_dict}

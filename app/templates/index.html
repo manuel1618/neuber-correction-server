@@ -27,12 +27,6 @@
                 <!-- Material Selection Tabs -->
                 <ul class="nav nav-tabs mb-3" id="materialTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="preset-tab" data-bs-toggle="tab" data-bs-target="#preset"
-                            type="button" role="tab">
-                            Preset Materials
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
                         <button class="nav-link" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual"
                             type="button" role="tab">
                             Manual Input
@@ -44,49 +38,16 @@
                             Upload YAML
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="preset-report-tab" data-bs-toggle="tab" data-bs-target="#preset-report"
+                            type="button" role="tab">
+                            Preset Report
+                        </button>
+                    </li>
                 </ul>
 
                 <!-- Tab Content -->
                 <div class="tab-content" id="materialTabContent">
-                    <!-- Preset Materials Tab -->
-                    <div class="tab-pane fade show active" id="preset" role="tabpanel">
-                        <form id="correctionForm">
-                            <div class="mb-3">
-                                <label for="material" class="form-label">Select Material</label>
-                                <select class="form-select" id="material" required>
-                                    <option value="">Choose a material...</option>
-                                    {% for name, props in materials.items() %}
-                                    <option value="{{ name }}" data-props='{{ props | tojson }}'>
-                                        {{ name.replace('_', ' ').title() }} - {{ props.description }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div id="materialInfo" class="mb-3" style="display: none;">
-                                <label class="form-label">Material Properties</label>
-                                <div id="materialDetails"></div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="stressValues" class="form-label">Stress Values (MPa)</label>
-                                <textarea class="form-control" id="stressValues" rows="3"
-                                    placeholder="Enter stress values separated by commas (e.g., 400, 500, 600)"
-                                    required></textarea>
-                                <div class="form-text">Enter multiple stress values separated by commas</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="customTitle" class="form-label">Custom Title (optional)</label>
-                                <input type="text" class="form-control" id="customTitle"
-                                    placeholder="e.g., Project Alpha - Neuber Analysis">
-                                <div class="form-text">Used for page title, navbar, and plot title</div>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary">Calculate Corrections</button>
-                        </form>
-                    </div>
-
                     <!-- Manual Input Tab -->
                     <div class="tab-pane fade" id="manual" role="tabpanel">
                         <form id="manualMaterialForm">
@@ -252,6 +213,69 @@
       epsilon_u: 0.12</code></pre>
                         </div>
                     </div>
+
+                    <!-- Preset Report Tab -->
+                    <div class="tab-pane fade show active" id="preset-report" role="tabpanel">
+                        <form id="presetReportForm">
+                            <div class="mb-3">
+                                <label for="presetReportMaterial" class="form-label">Select Material</label>
+                                <select class="form-select" id="presetReportMaterial" required>
+                                    <option value="">Choose a material...</option>
+                                    {% for name, props in materials.items() %}
+                                    <option value="{{ name }}" data-props='{{ props | tojson }}'>
+                                        {{ name.replace('_', ' ').title() }} - {{ props.description }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div id="presetReportMaterialInfo" class="mb-3" style="display: none;">
+                                <label class="form-label">Material Properties</label>
+                                <div id="presetReportMaterialDetails"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="presetReportStressValues" class="form-label">Stress Values (MPa)</label>
+                                <textarea class="form-control" id="presetReportStressValues" rows="3"
+                                    placeholder="Enter stress values separated by commas (e.g., 400, 500, 600)"
+                                    required></textarea>
+                                <div class="form-text">Enter multiple stress values separated by commas</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="presetReportPartName" class="form-label">Part Name</label>
+                                        <input type="text" class="form-control" id="presetReportPartName"
+                                            placeholder="e.g., Wing Spar" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="presetReportLocation" class="form-label">Location</label>
+                                        <input type="text" class="form-control" id="presetReportLocation"
+                                            placeholder="e.g., Root Section" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="presetReportLC" class="form-label">Load Case (LC)</label>
+                                        <input type="text" class="form-control" id="presetReportLC"
+                                            placeholder="e.g., LC1" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="presetReportUltimateFactor" class="form-label">Ultimate Factor</label>
+                                <input type="number" class="form-control" id="presetReportUltimateFactor"
+                                    value="1.5" step="0.1" min="0.1" required>
+                                <div class="form-text">Factor to multiply stress limit by to get ultimate stress</div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Calculate Corrections</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -316,10 +340,6 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const materialSelect = document.getElementById('material');
-        const materialInfo = document.getElementById('materialInfo');
-        const materialDetails = document.getElementById('materialDetails');
-        const correctionForm = document.getElementById('correctionForm');
         const manualMaterialForm = document.getElementById('manualMaterialForm');
         const uploadForm = document.getElementById('uploadForm');
         const resultsDiv = document.getElementById('results');
@@ -336,38 +356,54 @@
         const materialsList = document.getElementById('materialsList');
         const materialsTableBody = document.getElementById('materialsTableBody');
         const plotStressSelect = document.getElementById('plotStressSelect');
-        const customTitleInput = document.getElementById('customTitle');
         const manualCustomTitleInput = document.getElementById('manualCustomTitle');
         const uploadCustomTitleInput = document.getElementById('uploadCustomTitle');
+        const presetReportForm = document.getElementById('presetReportForm');
+        const presetReportMaterial = document.getElementById('presetReportMaterial');
+        const presetReportMaterialInfo = document.getElementById('presetReportMaterialInfo');
+        const presetReportMaterialDetails = document.getElementById('presetReportMaterialDetails');
 
         // Store manually added materials
         let manualMaterials = [];
         let currentStressValues = []; // Store current stress values for plot selection
         let lastCalculation = { materialName: '', customMaterial: null }; // Store last calculation details
 
-        // Show material info when selected (preset materials)
-        materialSelect.addEventListener('change', function () {
-            const selected = materialSelect.options[materialSelect.selectedIndex];
+        // Show material info when selected (preset report)
+        presetReportMaterial.addEventListener('change', function () {
+            const selected = presetReportMaterial.options[presetReportMaterial.selectedIndex];
             if (selected.value) {
                 const props = JSON.parse(selected.getAttribute('data-props'));
                 let html = '<ul class="list-group">';
+                
+                // Format property names for display
+                const formatPropertyName = (key) => {
+                    return key
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, l => l.toUpperCase())
+                        .replace('Ramberg Osgood', 'Ramberg-Osgood')
+                        .replace('N Source', 'n Source');
+                };
+                
                 for (const [k, v] of Object.entries(props)) {
                     if (k !== 'description' && k !== 'category') {
-                        html += `<li class="list-group-item"><strong>${k.replace('_', ' ').toUpperCase()}:</strong> ${v}</li>`;
+                        // Highlight ramberg_osgood_n_source
+                        const isHighlight = k === 'ramberg_osgood_n_source';
+                        const itemClass = isHighlight ? 'list-group-item list-group-item-info' : 'list-group-item';
+                        html += `<li class="${itemClass}"><strong>${formatPropertyName(k)}:</strong> ${v}</li>`;
                     }
                 }
                 html += '</ul>';
-                materialDetails.innerHTML = html;
-                materialInfo.style.display = '';
+                presetReportMaterialDetails.innerHTML = html;
+                presetReportMaterialInfo.style.display = '';
             } else {
-                materialInfo.style.display = 'none';
+                presetReportMaterialInfo.style.display = 'none';
             }
         });
 
-        // Handle preset materials form submission
-        correctionForm.addEventListener('submit', async function (e) {
+        // Handle preset report form submission
+        presetReportForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            await calculateCorrections();
+            await calculatePresetReportCorrections();
         });
 
         // Handle manual material form submission
@@ -413,24 +449,16 @@
             resultsTable.innerHTML = '';
             plotImage.src = '';
 
-            // Use provided stress values or get from the main form
-            let stressValues;
-            if (stressValuesParam) {
-                stressValues = stressValuesParam;
-            } else {
-                stressValues = document.getElementById('stressValues').value
-                    .split(',')
-                    .map(s => parseFloat(s.trim()))
-                    .filter(s => !isNaN(s));
-            }
+            // Use provided stress values
+            const stressValues = stressValuesParam || [];
 
             // Resolve custom title
             const customTitle = (customTitleParam !== null && customTitleParam !== undefined)
                 ? customTitleParam
-                : (customTitleInput ? customTitleInput.value.trim() : '');
+                : '';
 
-            if (!materialName && !materialSelect.value) {
-                alert('Please select a material and enter at least one valid stress value.');
+            if (!materialName) {
+                alert('Please provide a material name.');
                 return;
             }
 
@@ -441,9 +469,11 @@
 
             // Show loading state
             const submitBtn = document.querySelector('button[type="submit"]');
-            const originalText = submitBtn.textContent;
-            submitBtn.textContent = 'Calculating...';
-            submitBtn.disabled = true;
+            const originalText = submitBtn ? submitBtn.textContent : '';
+            if (submitBtn) {
+                submitBtn.textContent = 'Calculating...';
+                submitBtn.disabled = true;
+            }
 
             try {
                 // Call API
@@ -454,7 +484,7 @@
                         ...(customTitle ? { 'X-Custom-Title': customTitle } : {})
                     },
                     body: JSON.stringify({
-                        material_name: materialName || materialSelect.value,
+                        material_name: materialName,
                         stress_values: stressValues,
                         custom_material: customMaterial
                     })
@@ -485,7 +515,7 @@
                 // Store current stress values and populate plot selector
                 currentStressValues = data.original_stresses;
                 lastCalculation = {
-                    materialName: materialName || materialSelect.value,
+                    materialName: materialName,
                     customMaterial: customMaterial,
                     customTitle: customTitle
                 };
@@ -508,7 +538,7 @@
                         link.href = plotImage.src;
                         // Use the currently selected stress value from the plot selector
                         const selectedStress = plotStressSelect.value || data.original_stresses[0];
-                        const filenameTitle = (customTitle || materialName || materialSelect.value || 'neuber').replace(/\s+/g, '_');
+                        const filenameTitle = (customTitle || materialName || 'neuber').replace(/\s+/g, '_');
                         link.download = `neuber_diagram_${filenameTitle}_${selectedStress}.png`;
                         link.click();
                     }
@@ -525,7 +555,7 @@
                     const blob = new Blob([csv], { type: 'text/csv' });
                     const link = document.createElement('a');
                     link.href = URL.createObjectURL(blob);
-                    const filenameTitle = (customTitle || materialName || materialSelect.value || 'neuber').replace(/\s+/g, '_');
+                    const filenameTitle = (customTitle || materialName || 'neuber').replace(/\s+/g, '_');
                     link.download = `neuber_correction_${filenameTitle}.csv`;
                     link.click();
                 };
@@ -913,12 +943,27 @@ ${manualMaterials.map(material => `  - id: ${material.name}
                 downloadPlotBtn.disabled = true;
                 downloadPlotBtn.textContent = 'Generating Plot...';
 
-                await generatePlot(
-                    selectedStress,
-                    lastCalculation.materialName,
-                    lastCalculation.customMaterial,
-                    lastCalculation.customTitle
-                );
+                if (lastCalculation.isPresetReport) {
+                    // Get material properties for preset report
+                    const selected = presetReportMaterial.options[presetReportMaterial.selectedIndex];
+                    const materialProps = JSON.parse(selected.getAttribute('data-props'));
+                    await generatePresetReportPlot(
+                        selectedStress,
+                        lastCalculation.materialName,
+                        materialProps,
+                        lastCalculation.partName,
+                        lastCalculation.location,
+                        lastCalculation.lc,
+                        lastCalculation.ultimateFactor
+                    );
+                } else {
+                    await generatePlot(
+                        selectedStress,
+                        lastCalculation.materialName,
+                        lastCalculation.customMaterial,
+                        lastCalculation.customTitle
+                    );
+                }
 
                 // Re-enable download button after plot is generated
                 downloadPlotBtn.disabled = false;
@@ -938,12 +983,27 @@ ${manualMaterials.map(material => `  - id: ${material.name}
                         downloadPlotBtn.disabled = true;
                         downloadPlotBtn.textContent = 'Generating Plot...';
 
-                        await generatePlot(
-                            selectedStress,
-                            lastCalculation.materialName,
-                            lastCalculation.customMaterial,
-                            lastCalculation.customTitle
-                        );
+                        if (lastCalculation.isPresetReport) {
+                            // Get material properties for preset report
+                            const selected = presetReportMaterial.options[presetReportMaterial.selectedIndex];
+                            const materialProps = JSON.parse(selected.getAttribute('data-props'));
+                            await generatePresetReportPlot(
+                                selectedStress,
+                                lastCalculation.materialName,
+                                materialProps,
+                                lastCalculation.partName,
+                                lastCalculation.location,
+                                lastCalculation.lc,
+                                lastCalculation.ultimateFactor
+                            );
+                        } else {
+                            await generatePlot(
+                                selectedStress,
+                                lastCalculation.materialName,
+                                lastCalculation.customMaterial,
+                                lastCalculation.customTitle
+                            );
+                        }
 
                         // Re-enable download button after plot is generated
                         downloadPlotBtn.disabled = false;
@@ -1007,6 +1067,182 @@ ${manualMaterials.map(material => `  - id: ${material.name}
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                         ...(customTitle ? { 'X-Custom-Title': customTitle } : {})
+                    },
+                    body: new URLSearchParams(plotParams)
+                });
+
+                if (plotResp.ok) {
+                    const plotData = await plotResp.json();
+                    plotImage.src = plotData.plot_data;
+                    plotContainer.style.display = '';
+                } else {
+                    console.warn('Failed to generate plot:', plotResp.status);
+                }
+            } catch (plotError) {
+                console.warn('Could not generate plot:', plotError);
+            }
+        }
+
+        async function calculatePresetReportCorrections() {
+            resultsDiv.style.display = 'none';
+            plotContainer.style.display = 'none';
+            resultsTable.innerHTML = '';
+            plotImage.src = '';
+
+            const materialName = presetReportMaterial.value;
+            const stressValues = document.getElementById('presetReportStressValues').value
+                .split(',')
+                .map(s => parseFloat(s.trim()))
+                .filter(s => !isNaN(s));
+            const partName = document.getElementById('presetReportPartName').value.trim();
+            const location = document.getElementById('presetReportLocation').value.trim();
+            const lc = document.getElementById('presetReportLC').value.trim();
+            const ultimateFactor = parseFloat(document.getElementById('presetReportUltimateFactor').value);
+
+            if (!materialName) {
+                alert('Please select a material and enter at least one valid stress value.');
+                return;
+            }
+
+            if (stressValues.length === 0) {
+                alert('Please enter at least one valid stress value.');
+                return;
+            }
+
+            if (!partName || !location || !lc) {
+                alert('Please fill in all required fields: Part Name, Location, and Load Case.');
+                return;
+            }
+
+            if (isNaN(ultimateFactor) || ultimateFactor <= 0) {
+                alert('Please enter a valid ultimate factor (must be greater than 0).');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = presetReportForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Calculating...';
+            submitBtn.disabled = true;
+
+            try {
+                // Get material properties
+                const selected = presetReportMaterial.options[presetReportMaterial.selectedIndex];
+                const materialProps = JSON.parse(selected.getAttribute('data-props'));
+
+                // Call API for corrections
+                const response = await fetch('/api/correct', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        material_name: materialName,
+                        stress_values: stressValues
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error('API Error: ' + errorText);
+                }
+
+                const data = await response.json();
+
+                // Show results
+                resultsDiv.style.display = '';
+                resultsTable.innerHTML = '';
+
+                for (let i = 0; i < data.original_stresses.length; i++) {
+                    const orig = data.original_stresses[i];
+                    const corr = data.corrected_stresses[i];
+                    const reduction = ((orig - corr) / orig * 100).toFixed(2);
+                    resultsTable.innerHTML += `<tr>
+                    <td>${orig}</td>
+                    <td>${corr.toFixed(2)}</td>
+                    <td>${reduction}%</td>
+                </tr>`;
+                }
+
+                // Store current stress values and populate plot selector
+                currentStressValues = data.original_stresses;
+                lastCalculation = {
+                    materialName: materialName,
+                    customMaterial: null,
+                    customTitle: null,
+                    isPresetReport: true,
+                    partName: partName,
+                    location: location,
+                    lc: lc,
+                    ultimateFactor: ultimateFactor
+                };
+                populatePlotSelector(data.original_stresses);
+
+                // Generate plot for the first stress value by default
+                if (data.original_stresses.length > 0) {
+                    await generatePresetReportPlot(
+                        data.original_stresses[0],
+                        materialName,
+                        materialProps,
+                        partName,
+                        location,
+                        lc,
+                        ultimateFactor
+                    );
+                }
+
+                // Setup download handlers
+                downloadPlotBtn.onclick = function () {
+                    if (plotImage.src) {
+                        const link = document.createElement('a');
+                        link.href = plotImage.src;
+                        const selectedStress = plotStressSelect.value || data.original_stresses[0];
+                        const filenameTitle = `${partName}_${location}_${lc}`.replace(/\s+/g, '_');
+                        link.download = `neuber_limit_${filenameTitle}_${selectedStress}.png`;
+                        link.click();
+                    }
+                };
+
+                downloadCSVBtn.onclick = function () {
+                    let csv = 'Original Stress (MPa),Corrected Stress (MPa),Reduction (%)\n';
+                    for (let i = 0; i < data.original_stresses.length; i++) {
+                        const orig = data.original_stresses[i];
+                        const corr = data.corrected_stresses[i];
+                        const reduction = ((orig - corr) / orig * 100).toFixed(2);
+                        csv += `${orig},${corr.toFixed(2)},${reduction}\n`;
+                    }
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    const filenameTitle = `${partName}_${location}_${lc}`.replace(/\s+/g, '_');
+                    link.download = `neuber_correction_${filenameTitle}.csv`;
+                    link.click();
+                };
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                // Restore button state
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function generatePresetReportPlot(stressValue, materialName, materialProps, partName, location, lc, ultimateFactor) {
+            try {
+                const plotParams = {
+                    material_name: materialName,
+                    stress_value: stressValue.toString(),
+                    part_name: partName,
+                    location: location,
+                    lc: lc,
+                    ultimate_factor: ultimateFactor.toString()
+                };
+
+                const plotResp = await fetch('/api/plot-limit-ultimate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
                     },
                     body: new URLSearchParams(plotParams)
                 });
