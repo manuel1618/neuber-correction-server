@@ -15,6 +15,10 @@ services:
       - RATE_LIMIT_REQUESTS=100
     volumes:
       - neuber_data:/app/data
+      # Mount materials.yaml from network drive
+      # Replace /path/to/network/drive/materials.yaml with your actual network drive path
+      # The file will be read on every request, so changes are picked up automatically
+      - /path/to/network/drive/materials.yaml:/app/materials/materials.yaml:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

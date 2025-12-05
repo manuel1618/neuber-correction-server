@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 import yaml
 from pydantic import BaseModel, Field, field_validator
 
-# Constants
+# Materials file path - mount your network drive file to /app/materials/materials.yaml in the docker-compose.yml file
 MATERIALS_FILE = Path("materials/materials.yaml")
 
 
