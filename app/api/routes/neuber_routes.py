@@ -360,7 +360,7 @@ def mk_neuber_routes(app: FastAPI):
             n_source = material_props.get("ramberg_osgood_n_source")
             if n_source is None:
                 # Fallback: use the material name or a default
-                n_source = "N/A"
+                n_source = "calculated"
 
             # Generate plot using plot_neuber_limit_ultimate
             # Based on user's example, this is a module-level function
