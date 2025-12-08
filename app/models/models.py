@@ -108,105 +108,89 @@ def load_materials():
     )
 
     # Try to load from the specified file
+    # Always attempt to open the file - don't rely on exists() check
+    # This ensures we rescan on every request, even if exists() previously failed
     try:
-        # Check if file exists - wrap in try-except to handle network drive issues
-        file_exists = False
-        try:
-            file_exists = materials_file.exists()
-        except (OSError, IOError):
-            # File system error (e.g., network drive unavailable)
-            file_exists = False
-        
-        if file_exists:
-            try:
-                with open(materials_file, "r", encoding="utf-8") as f:
-                    data = yaml.safe_load(f)
-                    # Convert new format to old format for compatibility
-                    if "materials" in data and isinstance(data["materials"], list):
-                        materials_dict = {}
-                        valid_materials = 0
-                        total_materials = len(data["materials"])
+        with open(materials_file, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+            # Convert new format to old format for compatibility
+            if "materials" in data and isinstance(data["materials"], list):
+                materials_dict = {}
+                valid_materials = 0
+                total_materials = len(data["materials"])
 
-                        for material in data["materials"]:
-                            if "id" in material and "properties" in material:
-                                materials_dict[material["id"]] = {
-                                    "yield_strength": material["properties"].get("fty", 0),
-                                    "sigma_u": material["properties"].get("ftu", 0),
-                                    "elastic_mod": material["properties"].get("E", 0),
-                                    "eps_u": material["properties"].get("epsilon_u", 0),
-                                    "ramberg_osgood_n": material["properties"].get(
-                                        "ramberg_osgood_n"
-                                    )
-                                    or material["properties"].get(
-                                        "ramber_osgood_n"
-                                    ),  # Handle typo in YAML
-                                    "ramberg_osgood_n_source": material["properties"].get(
-                                        "ramberg_osgood_n_source"
-                                    ),
-                                    "description": material.get("name", material["id"]),
-                                }
-                                valid_materials += 1
+                for material in data["materials"]:
+                    if "id" in material and "properties" in material:
+                        materials_dict[material["id"]] = {
+                            "yield_strength": material["properties"].get("fty", 0),
+                            "sigma_u": material["properties"].get("ftu", 0),
+                            "elastic_mod": material["properties"].get("E", 0),
+                            "eps_u": material["properties"].get("epsilon_u", 0),
+                            "ramberg_osgood_n": material["properties"].get(
+                                "ramberg_osgood_n"
+                            )
+                            or material["properties"].get(
+                                "ramber_osgood_n"
+                            ),  # Handle typo in YAML
+                            "ramberg_osgood_n_source": material["properties"].get(
+                                "ramberg_osgood_n_source"
+                            ),
+                            "description": material.get("name", material["id"]),
+                        }
+                        valid_materials += 1
 
-                        # If we have materials but none are valid, fall back to defaults
-                        if total_materials > 0 and valid_materials == 0:
-                            # File has materials but they're invalid, fall back to defaults
-                            pass
-                        else:
-                            # Return the materials dict (even if empty for valid empty files)
-                            return {"materials": materials_dict}
-            except (OSError, IOError, FileNotFoundError):
-                # File was deleted/replaced during access, or network drive unavailable
-                # Fall through to try default materials
-                pass
-            except (yaml.YAMLError, ValueError):
-                # Invalid YAML content
-                # Fall through to try default materials
-                pass
+                # If we have materials but none are valid, fall back to defaults
+                if total_materials > 0 and valid_materials == 0:
+                    # File has materials but they're invalid, fall back to defaults
+                    pass
+                else:
+                    # Return the materials dict (even if empty for valid empty files)
+                    return {"materials": materials_dict}
+    except (OSError, IOError, FileNotFoundError):
+        # File doesn't exist, was deleted/replaced, or network drive unavailable
+        # Fall through to try default materials
+        pass
+    except (yaml.YAMLError, ValueError):
+        # Invalid YAML content
+        # Fall through to try default materials
+        pass
     except Exception:
         # Catch any other unexpected errors
         pass
 
     # If the specified file failed or had invalid materials, try to load from the default materials file
+    # Always attempt to open - don't rely on exists() check for same reason as above
     default_materials_file = Path("materials/materials.yaml")
     if default_materials_file != materials_file:
         try:
-            # Check if default file exists - wrap in try-except
-            default_exists = False
-            try:
-                default_exists = default_materials_file.exists()
-            except (OSError, IOError):
-                default_exists = False
-            
-            if default_exists:
-                try:
-                    with open(default_materials_file, "r", encoding="utf-8") as f:
-                        data = yaml.safe_load(f)
-                        # Convert new format to old format for compatibility
-                        if "materials" in data and isinstance(data["materials"], list):
-                            materials_dict = {}
-                            for material in data["materials"]:
-                                if "id" in material and "properties" in material:
-                                    materials_dict[material["id"]] = {
-                                        "yield_strength": material["properties"].get("fty", 0),
-                                        "sigma_u": material["properties"].get("ftu", 0),
-                                        "elastic_mod": material["properties"].get("E", 0),
-                                        "eps_u": material["properties"].get("epsilon_u", 0),
-                                        "ramberg_osgood_n": material["properties"].get(
-                                            "ramberg_osgood_n"
-                                        )
-                                        or material["properties"].get(
-                                            "ramber_osgood_n"
-                                        ),  # Handle typo in YAML
-                                        "ramberg_osgood_n_source": material["properties"].get(
-                                            "ramberg_osgood_n_source"
-                                        ),
-                                        "description": material.get("name", material["id"]),
-                                    }
-                            return {"materials": materials_dict}
-                        return data
-                except (OSError, IOError, FileNotFoundError, yaml.YAMLError, ValueError):
-                    # File access error or invalid YAML - fall through to return empty
-                    pass
+            with open(default_materials_file, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+                # Convert new format to old format for compatibility
+                if "materials" in data and isinstance(data["materials"], list):
+                    materials_dict = {}
+                    for material in data["materials"]:
+                        if "id" in material and "properties" in material:
+                            materials_dict[material["id"]] = {
+                                "yield_strength": material["properties"].get("fty", 0),
+                                "sigma_u": material["properties"].get("ftu", 0),
+                                "elastic_mod": material["properties"].get("E", 0),
+                                "eps_u": material["properties"].get("epsilon_u", 0),
+                                "ramberg_osgood_n": material["properties"].get(
+                                    "ramberg_osgood_n"
+                                )
+                                or material["properties"].get(
+                                    "ramber_osgood_n"
+                                ),  # Handle typo in YAML
+                                "ramberg_osgood_n_source": material["properties"].get(
+                                    "ramberg_osgood_n_source"
+                                ),
+                                "description": material.get("name", material["id"]),
+                            }
+                    return {"materials": materials_dict}
+                return data
+        except (OSError, IOError, FileNotFoundError, yaml.YAMLError, ValueError):
+            # File access error or invalid YAML - fall through to return empty
+            pass
         except Exception:
             # Catch any other unexpected errors
             pass
