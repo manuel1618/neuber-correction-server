@@ -279,7 +279,8 @@ def mk_neuber_routes(app: FastAPI):
         part_name: str = Form(...),
         location: str = Form(...),
         lc: str = Form(...),
-        ultimate_factor: float = Form(1.5),
+        ultimate_factor: Optional[float] = Form(None),
+        ultimate_force: Optional[float] = Form(None),
     ):
         """Generate and return Neuber limit ultimate plot"""
         start_time = time.time()
@@ -355,6 +356,27 @@ def mk_neuber_routes(app: FastAPI):
             # Use the stress value directly as the limit (not corrected)
             stress_limit = stress_value
 
+            # Determine ultimate stress: either from direct force or calculated from factor
+            if ultimate_force is not None:
+                if ultimate_force <= 0:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Ultimate force must be greater than 0"
+                    )
+                stress_ultimate = ultimate_force
+            elif ultimate_factor is not None:
+                if ultimate_factor <= 0:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Ultimate factor must be greater than 0"
+                    )
+                stress_ultimate = stress_limit * ultimate_factor
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Either ultimate_factor or ultimate_force must be provided"
+                )
+
             # Get ramberg_osgood_n_source (the source string, not the numeric value)
             # This should be a string like "MMPDS" indicating where the hardening exponent came from
             n_source = material_props.get("ramberg_osgood_n_source")
@@ -371,7 +393,7 @@ def mk_neuber_routes(app: FastAPI):
                 if hasattr(neuber_correction, "plot_neuber_limit_ultimate"):
                     fig, _ = neuber_correction.plot_neuber_limit_ultimate(
                         stress_limit=stress_limit,
-                        stress_ultimate=stress_limit * ultimate_factor,
+                        stress_ultimate=stress_ultimate,
                         show_plot=False,
                         plot_file="neuber_limit_ultimate.png",
                         plot_pretty_name=f"Neuber Limit: {part_name}, location: {location}\n {lc}",
@@ -381,7 +403,7 @@ def mk_neuber_routes(app: FastAPI):
                     # Try as method on NeuberCorrection class
                     fig, _ = neuber.plot_neuber_limit_ultimate(
                         stress_limit=stress_limit,
-                        stress_ultimate=stress_limit * ultimate_factor,
+                        stress_ultimate=stress_ultimate,
                         show_plot=False,
                         plot_file="neuber_limit_ultimate.png",
                         plot_pretty_name=f"Neuber Limit: {part_name}, location: {location}\n {lc}",
@@ -393,7 +415,7 @@ def mk_neuber_routes(app: FastAPI):
 
                     fig, _ = plot_neuber_limit_ultimate(
                         stress_limit=stress_limit,
-                        stress_ultimate=stress_limit * ultimate_factor,
+                        stress_ultimate=stress_ultimate,
                         show_plot=False,
                         plot_file="neuber_limit_ultimate.png",
                         plot_pretty_name=f"Neuber Limit: {part_name}, location: {location}\n {lc}",

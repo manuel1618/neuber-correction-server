@@ -267,10 +267,28 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="presetReportUltimateFactor" class="form-label">Ultimate Factor</label>
+                                <label class="form-label">Ultimate Stress Input Method</label>
+                                <div class="mb-2">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="ultimateInputMethod" 
+                                            id="ultimateInputFactor" value="factor" checked>
+                                        <label class="form-check-label" for="ultimateInputFactor">
+                                            Factor
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="ultimateInputMethod" 
+                                            id="ultimateInputDirect" value="direct">
+                                        <label class="form-check-label" for="ultimateInputDirect">
+                                            Direct Force (MPa)
+                                        </label>
+                                    </div>
+                                </div>
                                 <input type="number" class="form-control" id="presetReportUltimateFactor"
-                                    value="1.5" step="0.1" min="0.1" required>
-                                <div class="form-text">Factor to multiply stress limit by to get ultimate stress</div>
+                                    value="1.5" min="0.0001" step="any" required>
+                                <div class="form-text" id="ultimateInputHelp">
+                                    Factor to multiply stress limit by to get ultimate stress
+                                </div>
                             </div>
 
                             <button type="submit" class="btn btn-primary">Calculate Corrections</button>
@@ -391,6 +409,29 @@
                 presetReportMaterialInfo.style.display = 'none';
             }
         });
+
+        // Handle ultimate input method toggle
+        const ultimateInputFactor = document.getElementById('ultimateInputFactor');
+        const ultimateInputDirect = document.getElementById('ultimateInputDirect');
+        const presetReportUltimateFactor = document.getElementById('presetReportUltimateFactor');
+        const ultimateInputHelp = document.getElementById('ultimateInputHelp');
+
+        function updateUltimateInputMode() {
+            if (ultimateInputFactor.checked) {
+                presetReportUltimateFactor.value = presetReportUltimateFactor.value || '1.5';
+                presetReportUltimateFactor.min = '0.0001';
+                presetReportUltimateFactor.step = 'any';
+                ultimateInputHelp.textContent = 'Factor to multiply stress limit by to get ultimate stress';
+            } else {
+                presetReportUltimateFactor.value = '';
+                presetReportUltimateFactor.min = '0.0001';
+                presetReportUltimateFactor.step = 'any';
+                ultimateInputHelp.textContent = 'Direct ultimate stress value in MPa';
+            }
+        }
+
+        ultimateInputFactor.addEventListener('change', updateUltimateInputMode);
+        ultimateInputDirect.addEventListener('change', updateUltimateInputMode);
 
         // Handle preset report form submission
         presetReportForm.addEventListener('submit', async function (e) {
@@ -946,7 +987,8 @@ ${manualMaterials.map(material => `  - id: ${material.name}
                         lastCalculation.partName,
                         lastCalculation.location,
                         lastCalculation.lc,
-                        lastCalculation.ultimateFactor
+                        lastCalculation.ultimateInputValue,
+                        lastCalculation.isDirectForce
                     );
                 } else {
                     await generatePlot(
@@ -1042,7 +1084,8 @@ ${manualMaterials.map(material => `  - id: ${material.name}
             const partName = document.getElementById('presetReportPartName').value.trim();
             const location = document.getElementById('presetReportLocation').value.trim();
             const lc = document.getElementById('presetReportLC').value.trim();
-            const ultimateFactor = parseFloat(document.getElementById('presetReportUltimateFactor').value);
+            const ultimateInputValue = parseFloat(document.getElementById('presetReportUltimateFactor').value);
+            const isDirectForce = document.getElementById('ultimateInputDirect').checked;
 
             if (!materialName) {
                 alert('Please select a material and enter at least one valid stress value.');
@@ -1059,8 +1102,12 @@ ${manualMaterials.map(material => `  - id: ${material.name}
                 return;
             }
 
-            if (isNaN(ultimateFactor) || ultimateFactor <= 0) {
-                alert('Please enter a valid ultimate factor (must be greater than 0).');
+            if (isNaN(ultimateInputValue) || ultimateInputValue <= 0) {
+                if (isDirectForce) {
+                    alert('Please enter a valid ultimate force value in MPa (must be greater than 0).');
+                } else {
+                    alert('Please enter a valid ultimate factor (must be greater than 0).');
+                }
                 return;
             }
 
@@ -1119,7 +1166,8 @@ ${manualMaterials.map(material => `  - id: ${material.name}
                     partName: partName,
                     location: location,
                     lc: lc,
-                    ultimateFactor: ultimateFactor
+                    ultimateInputValue: ultimateInputValue,
+                    isDirectForce: isDirectForce
                 };
                 populatePlotSelector(data.original_stresses);
 
@@ -1132,7 +1180,8 @@ ${manualMaterials.map(material => `  - id: ${material.name}
                         partName,
                         location,
                         lc,
-                        ultimateFactor
+                        ultimateInputValue,
+                        isDirectForce
                     );
                 }
 
@@ -1173,16 +1222,21 @@ ${manualMaterials.map(material => `  - id: ${material.name}
             }
         }
 
-        async function generatePresetReportPlot(stressValue, materialName, materialProps, partName, location, lc, ultimateFactor) {
+        async function generatePresetReportPlot(stressValue, materialName, materialProps, partName, location, lc, ultimateInputValue, isDirectForce) {
             try {
                 const plotParams = {
                     material_name: materialName,
                     stress_value: stressValue.toString(),
                     part_name: partName,
                     location: location,
-                    lc: lc,
-                    ultimate_factor: ultimateFactor.toString()
+                    lc: lc
                 };
+                
+                if (isDirectForce) {
+                    plotParams.ultimate_force = ultimateInputValue.toString();
+                } else {
+                    plotParams.ultimate_factor = ultimateInputValue.toString();
+                }
 
                 const plotResp = await fetch('/api/plot-limit-ultimate', {
                     method: 'POST',
